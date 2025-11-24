@@ -5,5 +5,3 @@ load_dotenv()
 
 ENTSOE_API_KEY = os.getenv("ENTSOE_API_KEY")
 COUNTRY_CODE = "FR"
-
-RANDOMSTUFF = 0
