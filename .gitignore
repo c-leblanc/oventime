@@ -1,0 +1,38 @@
+# --- Environnements virtuels ---
+.venv/
+venv/
+env/
+
+# --- Fichiers d'environnement (clés API, etc.) ---
+.env
+*.env
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# --- VS Code ---
+.vscode/
+
+# --- macOS ---
+.DS_Store
+
+# --- Données brutes éventuelles ---
+data/raw/*
+data/processed/*
+
+# Garder éventuellement un fichier de README
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# --- Logs ---
+*.log
+
+# --- Streamlit ---
+.streamlit/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
