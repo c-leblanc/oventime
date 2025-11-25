@@ -1,6 +1,6 @@
 import requests
-from .config import ENTSOE_API_KEY
-from .config import BASE_URL
+from oven_time.config import ENTSOE_API_KEY
+from oven_time.config import BASE_URL
 
 
 def get_generation_mix(start, end, country="FR"):
