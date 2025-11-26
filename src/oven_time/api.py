@@ -34,5 +34,3 @@ def download_raw_data_24H():
     now = pd.Timestamp.now(tz='Europe/Paris').floor("15min")
     yesterday = now - pd.Timedelta(hours=24)
     download_raw_data(start=yesterday,end=now)
-
-

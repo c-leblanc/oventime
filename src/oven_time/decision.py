@@ -1,9 +1,9 @@
-import oven_time.processing.format_table as fmt
+from oven_time import processing
 
 
 
 def call_tec(tec):
-    data = fmt.init_data()
+    data = processing.init_data()
     call_idx = {}
     for t in tec:
         call_idx[t] = (data[t].iloc[-1]-data[t].min())/(data[t].max()-data[t].min())
