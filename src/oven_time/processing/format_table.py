@@ -24,30 +24,38 @@ def clean_generation():
 
     gen_technos = generation.columns.drop("time")
     generation[gen_technos] = generation[gen_technos].apply(pd.to_numeric, errors="coerce")
+    generation_detail = generation
 
-    generation["Storage"] = generation["Storage_PROD"] - generation["Storage_CONS"]
-    generation = generation.drop(columns=["Storage_PROD", "Storage_CONS"])
-    generation["PHS"] = generation["PHS_PROD"] - generation["PHS_CONS"]
-    generation = generation.drop(columns=["PHS_PROD", "PHS_CONS"])
+    # Agreggation
+    generation["RENEWABLE"] = generation["Wind_off"]+generation["Wind_on"]+generation["Solar"]+generation["RoR"]
+    generation["NUCLEAR"] = generation["Nuclear"]  
+    generation["STORAGE"] = generation["Storage_PROD"]-generation["Storage_CONS"]+generation["PHS_PROD"]+generation["HydroDams"]
+    generation["GAS"] = generation["Gas"]
+    generation["COAL"] = generation["Coal"]
+    generation["OTHER_DISP"] = generation["Oil"]+generation["Biomass"]+generation["Waste"]
 
-    generation.to_csv(PROJECT_ROOT / "data/processed/generation.csv", index=False)
+    generation_summary = generation[["time","RENEWABLE","NUCLEAR","STORAGE","GAS","COAL","OTHER_DISP"]]
+
+    generation_detail.to_csv(PROJECT_ROOT / "data/processed/generation_detail.csv", index=False, float_format="%.0f")
+    return(generation_summary)
 
 def clean_load():
     load = pd.read_csv(PROJECT_ROOT / "data/raw/load.csv")
     #load = load.drop(load.columns[0], axis=1)
-    load = load.rename(columns={"Unnamed: 0":"time","Actual Load":"Load"})
+    load = load.rename(columns={"Unnamed: 0":"time","Actual Load":"load"})
 
-    load.to_csv(PROJECT_ROOT / "data/processed/load.csv", index=False)
+    #load.to_csv(PROJECT_ROOT / "data/processed/load.csv", index=False, float_format="%.0f")
+    return(load)
 
 #def clean_trade():
 
-def merge_data():
-    clean_generation()
-    generation = pd.read_csv(PROJECT_ROOT / "data/processed/generation.csv")
-    clean_load()
-    load = pd.read_csv(PROJECT_ROOT / "data/processed/load.csv")
+def init_data():
+    generation = clean_generation()
+    load = clean_load()
     #clean_trade()
     #trade = pd.read_csv(PROJECT_ROOT / "data/processed/trade.csv")
 
-    full_data = pd.merge(generation, load, on="time", how="inner")
-    full_data.to_csv(PROJECT_ROOT / "data/processed/full_data.csv", index=False)
+    full_data = pd.merge(load,generation, on="time", how="inner")
+    full_data.to_csv(PROJECT_ROOT / "data/processed/init_data.csv", index=False, float_format="%.0f")
+
+    return(full_data)
