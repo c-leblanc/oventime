@@ -56,7 +56,9 @@ def init_data():
     #trade = pd.read_csv(PROJECT_ROOT / "data/processed/trade.csv")
 
     full_data = pd.merge(load,generation, on="time", how="inner")
-    full_data.to_csv(PROJECT_ROOT / "data/processed/init_data.csv", index=False, float_format="%.0f")
+    full_data = full_data.set_index("time")
+    full_data.index = pd.to_datetime(full_data.index)
+    full_data.to_csv(PROJECT_ROOT / "data/processed/init_data.csv", index=True, float_format="%.0f")
 
     return(full_data)
 
@@ -65,7 +67,7 @@ def static_mix():
     
     # define tech columns (exclude index, time, Load)
     cols = data.columns.tolist()
-    tech_cols = [c for c in cols if c not in ["time","load"]]
+    tech_cols = [c for c in cols if c not in ["load"]]
 
     # compute residual = exchanges
     data["TRADE"] = data["load"] - data[tech_cols].sum(axis=1)
@@ -81,9 +83,6 @@ def static_mix():
 
 def variation_mix():
     data = init_data()
-
-    # 0. Ordonner et indexer par le temps
-    data = data.sort_values("time").set_index("time")
 
     cols = data.columns.tolist()
     tech_cols = [c for c in cols if c not in ["load"]]  # adapte selon tes noms
