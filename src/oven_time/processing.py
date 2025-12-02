@@ -57,7 +57,7 @@ def init_data():
 
     full_data = pd.merge(load,generation, on="time", how="inner")
     full_data = full_data.set_index("time")
-    full_data.index = pd.to_datetime(full_data.index)
+    full_data.index = pd.to_datetime(full_data.index, utc=True)
     full_data.to_csv(PROJECT_ROOT / "data/processed/init_data.csv", index=True, float_format="%.0f")
 
     return(full_data)
