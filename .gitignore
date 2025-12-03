@@ -24,6 +24,9 @@ __pycache__/
 data/raw/*
 data/processed/*
 
+# --- Notebooks destiné à l'exploration ---
+notebooks/
+
 # Garder éventuellement un fichier de README
 !data/raw/.gitkeep
 !data/processed/.gitkeep
