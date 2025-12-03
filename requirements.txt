@@ -36,7 +36,7 @@ matplotlib-inline==0.2.1
 narwhals==2.12.0
 nest-asyncio==1.6.0
 numpy==2.0.2
--e git+ssh://git@github.com/c-leblanc/oventime.git@bd65c6e970658e118a5e9fb9fcc43ddf7aef082c#egg=oven_time
+#-e git+ssh://git@github.com/c-leblanc/oventime.git@bd65c6e970658e118a5e9fb9fcc43ddf7aef082c#egg=oven_time
 packaging==25.0
 pandas==2.3.3
 parso==0.8.5
