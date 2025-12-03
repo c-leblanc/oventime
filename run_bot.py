@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import threading
 
 # Ajouter src au PYTHONPATH
 ROOT = Path(__file__).resolve().parent
@@ -7,7 +8,13 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from oven_time.bot import main  # adapte au point d’entrée réel
+from oven_time import bot, api
+
 
 if __name__ == "__main__":
-    main()
+    
+    # démarrer la tâche d'update en arrière-plan
+    t = threading.Thread(target=api.background_updater, daemon=True)
+    t.start()
+
+    bot.main()

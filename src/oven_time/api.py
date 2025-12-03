@@ -1,7 +1,6 @@
 from entsoe import EntsoePandasClient
 import pandas as pd
-import os
-from pathlib import Path
+import time
 
 from oven_time.config import COUNTRY_CODE
 from oven_time.config import ENTSOE_API_KEY
@@ -133,6 +132,12 @@ def update_raw_data(retention_days=7, verbose=True):
     generation.to_csv(gen_file)
 
     log("Update complete.")
+
+
+def background_updater():
+    while True:
+        update_raw_data(retention_days=7, verbose=True)
+        time.sleep(15 * 60)  # 15 minutes
 
 
 if __name__ == "__main__":
