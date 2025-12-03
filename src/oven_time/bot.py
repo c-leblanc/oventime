@@ -4,7 +4,7 @@ import dateparser
 from telegram.ext import ApplicationBuilder, CommandHandler
 from oven_time.core import get_diagnostic
 
-TOKEN = "8590705995:AAHrgVVWuk3KyxxS7aHcz0Po8o0222QERfY"
+from oven_time.config import TELEGRAM_TOKEN
 
 logging.basicConfig(level=logging.INFO)
 
@@ -54,7 +54,7 @@ async def at(update, context):
     await update.message.reply_markdown(msg)
 
 def main():
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("m", now))
     app.add_handler(CommandHandler("a", at))
     app.run_polling()

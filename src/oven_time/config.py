@@ -13,3 +13,4 @@ ENTSOE_API_KEY = os.getenv("ENTSOE_API_KEY")
 BASE_URL = "https://api.entsoe.eu/api"
 COUNTRY_CODE = "FR"
 
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
