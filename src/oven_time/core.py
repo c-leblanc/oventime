@@ -3,7 +3,7 @@ from oven_time import api, decision
 def get_diagnostic(
         at_time: str = None,
         tz_output: str = "Europe/Paris",
-        update: bool = True
+        update: bool = False
         ):
     
     if update: api.update_raw_data(verbose=False)
