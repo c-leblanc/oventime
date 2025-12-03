@@ -27,10 +27,10 @@ def get_diagnostic(
         f"📊 Etat du système à {diag['time'].tz_convert(tz_output).strftime('%H:%M')} ({diag['time'].tz_convert(tz_output).strftime('%d/%m')})\n\n"
         f"🔥 Gaz mobilisé à {diag['gas_phase']*100:.0f}%\n"
         f"💧 Hydro/Stockage mobilisé à {diag['storage_use_rate']*100:.0f}%\n"
-        f"⚛️ Nucléaire à {diag['nuclear_use_rate']*100:.1f}% de sa capacité\n"
+        f"⚛️ Nucléaire à {diag['nuclear_use_rate']*100:.1f}% de sa dispo\n"
         f"🔎 Score: {diag['score']:.0f}\n\n"
         f"👉 {ccl}"
     )
-    print(text)
+    #print(text)
 
     return(text)
