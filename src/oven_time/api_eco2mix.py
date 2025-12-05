@@ -1,6 +1,7 @@
 import requests
 from datetime import timedelta
 import pandas as pd
+import time
 
 from oven_time.config import PROJECT_ROOT
 BASE_URL = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-national-tr/records"
@@ -112,6 +113,10 @@ def update_eco2mix_data(retention_days=7,verbose=True):
     log("Update complete.")
 
 
+def background_updater():
+    while True:
+        update_eco2mix_data(retention_days=7, verbose=True)
+        time.sleep(5 * 60)  # 5 minutes
 
 
 

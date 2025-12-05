@@ -176,8 +176,7 @@ def get_cycle_whereat(
 
 
 
-def diagnostic(at_time: Union[None, str, pd.Timestamp] = None,
-               tz_output: str = "Europe/Paris"):
+def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
     """
     Provide a global qualitative + quantitative diagnostic of power system tightness,
     based on the current position of:
@@ -230,9 +229,9 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None,
     # ------------------------------------------------------------
     # Retrieve short-term cycle positions
     # ------------------------------------------------------------
-    gas_phase = cycle_whereat(
-        ["GAS"], target_time, data, window=24*4, mode="min_to_max"
-    )["GAS"]
+    gasCCG_use_rate = cycle_whereat(
+        ["GAS_CCG"], target_time, data, window=24*4, mode="zero_to_max"
+    )["GAS_CCG"]
 
     storage_phase = cycle_whereat(
         ["STORAGE"], target_time, data, window=24*4, mode="min_to_max"
@@ -249,12 +248,12 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None,
     # ------------------------------------------------------------
     # Compute initial score (looser system = higher score)
     # ------------------------------------------------------------
-    score = 100*(1 - gas_phase) + 50*(1 - storage_phase)
+    score = 100*(1 - gasCCG_use_rate) + 50*(1 - storage_phase)
 
     # ------------------------------------------------------------
     # Bonus points when nuclear cycling down
     # ------------------------------------------------------------
-    if gas_phase <= 0.1 and nuclear_use_rate <= 0.995:
+    if gasCCG_use_rate <= 0.1 and nuclear_use_rate <= 0.995:
             score += (1 - nuclear_use_rate) * 5000  # Bonus for downward nuclear cycling
 
 
@@ -262,8 +261,13 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None,
     return {
         "time": target_time,
         "score": score,
-        "gas_phase": gas_phase,
+        "gasCCG_use_rate": gasCCG_use_rate,
+        "gasCCG_phase": gasCCG_use_rate,
         "storage_phase": storage_phase,
         "storage_use_rate": storage_use_rate,
         "nuclear_use_rate": nuclear_use_rate,
     }
+
+if __name__ == "__main__":
+    print(diagnostic())
+
