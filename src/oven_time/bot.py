@@ -101,6 +101,11 @@ async def on_startup(app):
 
 
 def main():
+    # Launch regular updates
+    t = threading.Thread(target=background_updater, daemon=True)
+    t.start()
+
+    #Launch the bot
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("m", now))
     app.add_handler(CommandHandler("a", at))
@@ -109,9 +114,4 @@ def main():
     app.run_polling()
 
 if __name__ == "__main__":
-    # Launch regular updates
-    t = threading.Thread(target=background_updater, daemon=True)
-    t.start()
-
-    #Launch the bot
     main()

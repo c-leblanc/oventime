@@ -42,7 +42,7 @@ def fetch_df(start=None, end=None, limit=100, vars=None) -> pd.DataFrame:
 
     return df
 
-def update_eco2mix_data(retention_days=7,verbose=True):
+def update_eco2mix_data(retention_days=RETENTION_DAYS,verbose=True):
     def log(msg):
         """Small helper to control verbosity."""
         if verbose:
@@ -56,14 +56,23 @@ def update_eco2mix_data(retention_days=7,verbose=True):
     # ------------------------------------------------------------
     eco2mix_file = raw_dir / "eco2mix.csv"
     
+    log(f"eco2mix_file path: {eco2mix_file} (exists={eco2mix_file.exists()})")
     if eco2mix_file.exists():
         existing = pd.read_csv(eco2mix_file, index_col=0, parse_dates=True)
-        last_timestamp = existing.index.max()
-        log(f"Last timestamp in load file: {last_timestamp}")
+        # Remove last rows if incomplete
+        while len(existing) > 0 and existing.iloc[-1].isna().any():
+            existing = existing.iloc[:-1]
+
+        if len(existing) == 0:
+            last_timestamp = None
+            log("eco2mix file is empty after trimming incomplete tail rows.")
+        else:
+            last_timestamp = existing.index.max()
+            log(f"Last timestamp in eco2mix file (after trimming): {last_timestamp}")
     else:
         existing = None
         last_timestamp = None
-        log("No existing load file found.")
+        log("No existing eco2mix file found.")
 
     # ------------------------------------------------------------
     # 2. Determine download window
@@ -76,8 +85,8 @@ def update_eco2mix_data(retention_days=7,verbose=True):
         start = now - pd.Timedelta(days=retention_days)
     else:
         # Continue from the next 15-minute step
-        start = last_timestamp + pd.Timedelta(minutes=15)
-        log(f"Attempting to download data starting from: {start}")
+        start = last_timestamp + pd.Timedelta(minutes=15)    
+    log(f"Attempting to download data starting from: {start}")
 
     if start >= now:
         log("Data already up to date. Nothing to download.")
@@ -122,5 +131,4 @@ def background_updater(retention_days=RETENTION_DAYS, freq=FREQ_UPDATE):
 
 
 if __name__ == "__main__":
-    df = fetch_df()
-    print(df)
+    update_eco2mix_data(verbose=True)
