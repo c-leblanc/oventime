@@ -1,5 +1,18 @@
 from oven_time import api_eco2mix, decision
 
+def concl_from_score(score: float) -> str:
+    if score > 100:
+        return "A FOND! Y a de l'électricité à ne savoir qu'en faire."
+    if score > 85:
+        return "VAS-Y : On est large."
+    if score > 70:
+        return "CA VA, On tire pas trop sur le gaz."
+    if score > 30:
+        return "UN PEU TENDU : C'est pas le pire, mais on tire un peu sur le gaz quand même."
+    if score > 0:
+        return "PAS MAINTENANT, Le système est tendu et les centrales gaz tournent à fond."
+    return "PIRE MOMENT! Le système est si tendu qu'on a démarré les centrales les plus polluantes."
+
 def get_diagnostic(
         at_time: str = None,
         tz_output: str = "Europe/Paris",
@@ -13,22 +26,13 @@ def get_diagnostic(
     # ------------------------------------------------------------
     # Qualitative interpretation for real-time feedback
     # ------------------------------------------------------------
-    ccl = ""
-    if diag["gasCCG_phase"] <= 0.1 and diag["nuclear_use_rate"] <= 0.995:
-        ccl = "A FOND! Y a de l'électricité à ne savoir qu'en faire."
-    elif diag["gasCCG_phase"] <= 0.3:
-            ccl = "CA VAAA! On tire pas trop sur le gaz."
-    elif diag["gasCCG_phase"] <= 0.6:
-        ccl = "Hmmm… C'est pas le pire, mais on tire un peu sur le gaz quand même."
-    else:
-        ccl = "EVITE! Le système est tendu et les centrales gaz tournent à fond."
-
+    ccl = concl_from_score(diag["score"])
     text = (
-        f"📊 Etat du système à {diag['time'].tz_convert(tz_output).strftime('%H:%M')} ({diag['time'].tz_convert(tz_output).strftime('%d/%m')})\n\n"
+        f"📊 *Etat du système* à {diag['time'].tz_convert(tz_output).strftime('%H:%M')} ({diag['time'].tz_convert(tz_output).strftime('%d/%m')})\n\n"
         f"🔥 Gaz mobilisé à {diag['gasCCG_use_rate']*100:.0f}%\n"
         f"💧 Hydro/Stockage mobilisé à {diag['storage_phase']*100:.0f}%\n"
         f"⚛️ Nucléaire à {diag['nuclear_use_rate']*100:.1f}% de sa dispo\n"
-        f"🔎 Score: {diag['score']:.0f}\n\n"
+        f"🔎 *Score: {diag['score']:.0f}*\n\n"
         f"👉 {ccl}"
     )
     #print(text)

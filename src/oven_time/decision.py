@@ -230,15 +230,15 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
     # Retrieve short-term cycle positions
     # ------------------------------------------------------------
     gasCCG_use_rate = cycle_whereat(
-        ["GAS_CCG"], target_time, data, window=24*4, mode="zero_to_max"
+        ["GAS_CCG"], target_time, data, window=100*4, mode="zero_to_max"
     )["GAS_CCG"]
 
     storage_phase = cycle_whereat(
-        ["STORAGE"], target_time, data, window=24*4, mode="min_to_max"
+        ["STORAGE"], target_time, data, window=100*4, mode="min_to_max"
     )["STORAGE"]
 
     storage_use_rate = cycle_whereat(
-        ["STORAGE"], target_time, data, window=24*4, mode="zero_to_max"
+        ["STORAGE"], target_time, data, window=100*4, mode="zero_to_max"
     )["STORAGE"]
 
     nuclear_use_rate = cycle_whereat(
@@ -246,21 +246,34 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
     )["NUCLEAR"]
 
     # ------------------------------------------------------------
-    # Compute initial score (looser system = higher score)
+    # Compute initial score between 0 and 100 (looser system = higher score)
     # ------------------------------------------------------------
-    score = 100*(1 - gasCCG_use_rate) + 50*(1 - storage_phase)
+    score = 100*((2/3)*(1 - gasCCG_use_rate) + (1/3)*(1 - storage_phase))
 
     # ------------------------------------------------------------
-    # Bonus points when nuclear cycling down
+    # Bonus points when nuclear cycling down (up to 50)
     # ------------------------------------------------------------
+    nuclear_bonus=0
     if gasCCG_use_rate <= 0.1 and nuclear_use_rate <= 0.995:
-            score += (1 - nuclear_use_rate) * 5000  # Bonus for downward nuclear cycling
+            nuclear_bonus = min(50,(1 - nuclear_use_rate) * 1000)
+            score += nuclear_bonus
+
+
+    # ------------------------------------------------------------
+    # Malus points when OCGT plants are on (typically up to 500 MW, i.e. 50 points)
+    # ------------------------------------------------------------
+    ocgt_malus=0
+    if gasCCG_use_rate >= 0.7:
+            ocgt_malus = max(-50,-data["GAS_TAC"].iloc[-1]/10)
+            score += ocgt_malus
 
 
     # Return full diagnostic bundle
     return {
         "time": target_time,
         "score": score,
+        "nuclear_bonus": nuclear_bonus,
+        "ocgt_malus": ocgt_malus,
         "gasCCG_use_rate": gasCCG_use_rate,
         "gasCCG_phase": gasCCG_use_rate,
         "storage_phase": storage_phase,

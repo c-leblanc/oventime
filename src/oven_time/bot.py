@@ -1,9 +1,11 @@
 import logging
 import pandas as pd
 import dateparser
-from telegram.ext import ApplicationBuilder, CommandHandler
-from oven_time.core import get_diagnostic
+import threading
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
+from oven_time.core import get_diagnostic
+from oven_time.api_eco2mix import background_updater
 from oven_time.config import TELEGRAM_TOKEN
 
 logging.basicConfig(level=logging.INFO)
@@ -53,11 +55,63 @@ async def at(update, context):
     msg = get_diagnostic(at_time=dt_utc)
     await update.message.reply_markdown(msg)
 
+#############################################
+## AUTOMATIC ALERT MESSAGES
+
+SUBSCRIBERS_KEY = "subscribers"
+
+async def start_auto(update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    subscribers = context.application.bot_data.setdefault(SUBSCRIBERS_KEY, set())
+    subscribers.add(chat_id)
+    await update.message.reply_text("✅ ACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡")
+
+async def stop_auto(update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    subscribers = context.application.bot_data.setdefault(SUBSCRIBERS_KEY, set())
+    subscribers.discard(chat_id)
+    await update.message.reply_text("❌ INACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡")
+
+async def check_score_job(context: ContextTypes.DEFAULT_TYPE):
+    global last_alert_high
+    diag = get_diagnostic()
+    score = diag.get("score", 0)
+
+    subscribers = context.application.bot_data.get(SUBSCRIBERS_KEY, set())
+
+    if score > 100 and not last_alert_high:
+        text = (
+            "ALERTE FOURNIL !\n\n"
+            f"Score actuel : {score}\n"
+            "A FOND! Y a de l'électricité à ne savoir qu'en faire."
+        )
+        for chat_id in subscribers:
+            await context.bot.send_message(chat_id=chat_id, text=text)
+        last_alert_high = True
+    elif score <= 100 and last_alert_high:
+        last_alert_high = False
+
+async def on_startup(app):
+    # job toutes les 5 minutes (par ex.)
+    app.job_queue.run_repeating(
+        check_score_job,
+        interval=300,
+        first=10,  # démarre 10 s après le lancement
+    )
+
+
 def main():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("m", now))
     app.add_handler(CommandHandler("a", at))
+    app.add_handler(CommandHandler("start_auto", start_auto))
+    app.add_handler(CommandHandler("stop_auto", stop_auto))
     app.run_polling()
 
 if __name__ == "__main__":
+    # Launch regular updates
+    t = threading.Thread(target=background_updater, daemon=True)
+    t.start()
+
+    #Launch the bot
     main()

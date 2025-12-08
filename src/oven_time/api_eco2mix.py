@@ -3,7 +3,8 @@ from datetime import timedelta
 import pandas as pd
 import time
 
-from oven_time.config import PROJECT_ROOT
+from oven_time.config import PROJECT_ROOT, RETENTION_DAYS, FREQ_UPDATE
+
 BASE_URL = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-national-tr/records"
 
 def fetch_raw(start, end, limit=100, vars=None):
@@ -113,10 +114,10 @@ def update_eco2mix_data(retention_days=7,verbose=True):
     log("Update complete.")
 
 
-def background_updater():
+def background_updater(retention_days=RETENTION_DAYS, freq=FREQ_UPDATE):
     while True:
-        update_eco2mix_data(retention_days=7, verbose=True)
-        time.sleep(5 * 60)  # 5 minutes
+        update_eco2mix_data(retention_days=retention_days, verbose=True)
+        time.sleep(freq * 60)  # 5 minutes
 
 
 

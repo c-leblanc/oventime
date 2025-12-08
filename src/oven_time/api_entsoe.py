@@ -2,7 +2,7 @@ from entsoe import EntsoePandasClient
 import pandas as pd
 import time
 
-from oven_time.config import COUNTRY_CODE
+from oven_time.config import COUNTRY_CODE, RETENTION_DAYS, FREQ_UPDATE
 from oven_time.config import ENTSOE_API_KEY
 from oven_time.config import PROJECT_ROOT
 
@@ -134,10 +134,10 @@ def update_raw_data(retention_days=7, verbose=True):
     log("Update complete.")
 
 
-def background_updater():
+def background_updater(retention_days=RETENTION_DAYS, freq = FREQ_UPDATE):
     while True:
-        update_raw_data(retention_days=7, verbose=True)
-        time.sleep(5 * 60)  # 5 minutes
+        update_raw_data(retention_days=retention_days, verbose=True)
+        time.sleep(freq * 60)  # 5 minutes
 
 
 if __name__ == "__main__":
