@@ -1,4 +1,4 @@
-from oven_time import api, decision
+from oven_time import api_eco2mix, decision
 
 def get_diagnostic(
         at_time: str = None,
@@ -6,7 +6,7 @@ def get_diagnostic(
         update: bool = False
         ):
     
-    if update: api.update_raw_data(verbose=False)
+    if update: api_eco2mix.update_eco2mix_data(verbose=False)
     
     diag = decision.diagnostic(at_time=at_time)
     
@@ -14,19 +14,19 @@ def get_diagnostic(
     # Qualitative interpretation for real-time feedback
     # ------------------------------------------------------------
     ccl = ""
-    if diag["gas_phase"] <= 0.1 and diag["nuclear_use_rate"] <= 0.995:
+    if diag["gasCCG_phase"] <= 0.1 and diag["nuclear_use_rate"] <= 0.995:
         ccl = "A FOND! Y a de l'électricité à ne savoir qu'en faire."
-    elif diag["gas_phase"] <= 0.3:
+    elif diag["gasCCG_phase"] <= 0.3:
             ccl = "CA VAAA! On tire pas trop sur le gaz."
-    elif diag["gas_phase"] <= 0.6:
+    elif diag["gasCCG_phase"] <= 0.6:
         ccl = "Hmmm… C'est pas le pire, mais on tire un peu sur le gaz quand même."
     else:
         ccl = "EVITE! Le système est tendu et les centrales gaz tournent à fond."
 
     text = (
         f"📊 Etat du système à {diag['time'].tz_convert(tz_output).strftime('%H:%M')} ({diag['time'].tz_convert(tz_output).strftime('%d/%m')})\n\n"
-        f"🔥 Gaz mobilisé à {diag['gas_phase']*100:.0f}%\n"
-        f"💧 Hydro/Stockage mobilisé à {diag['storage_use_rate']*100:.0f}%\n"
+        f"🔥 Gaz mobilisé à {diag['gasCCG_use_rate']*100:.0f}%\n"
+        f"💧 Hydro/Stockage mobilisé à {diag['storage_phase']*100:.0f}%\n"
         f"⚛️ Nucléaire à {diag['nuclear_use_rate']*100:.1f}% de sa dispo\n"
         f"🔎 Score: {diag['score']:.0f}\n\n"
         f"👉 {ccl}"
@@ -34,3 +34,7 @@ def get_diagnostic(
     #print(text)
 
     return(text)
+
+if __name__ == "__main__":
+    print(get_diagnostic())
+
