@@ -56,7 +56,7 @@ def update_eco2mix_data(retention_days=RETENTION_DAYS,verbose=True):
     # ------------------------------------------------------------
     eco2mix_file = raw_dir / "eco2mix.csv"
     
-    log(f"eco2mix_file path: {eco2mix_file} (exists={eco2mix_file.exists()})")
+    #log(f"eco2mix_file path: {eco2mix_file} (exists={eco2mix_file.exists()})")
     if eco2mix_file.exists():
         existing = pd.read_csv(eco2mix_file, index_col=0, parse_dates=True)
         # Remove last rows if incomplete
@@ -65,20 +65,20 @@ def update_eco2mix_data(retention_days=RETENTION_DAYS,verbose=True):
 
         if len(existing) == 0:
             last_timestamp = None
-            log("eco2mix file is empty after trimming incomplete tail rows.")
+            log("Existing data - None left after trimming")
         else:
             last_timestamp = existing.index.max()
-            log(f"Last timestamp in eco2mix file (after trimming): {last_timestamp}")
+            log(f"Existing data - Last timestamp: {last_timestamp}")
     else:
         existing = None
         last_timestamp = None
-        log("No existing eco2mix file found.")
+        log("Existing data - None")
 
     # ------------------------------------------------------------
     # 2. Determine download window
     # ------------------------------------------------------------
     now = pd.Timestamp.now(tz="UTC").floor("15min")
-    log(f"Current time considered: {now}")
+    #log(f"Current time considered: {now}")
 
     if last_timestamp is None:
         # No local data → start from retention_days ago
@@ -98,6 +98,7 @@ def update_eco2mix_data(retention_days=RETENTION_DAYS,verbose=True):
     while start < now:
 
         new_data = fetch_df(start=start, end=now)
+        print(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
 
         if existing is not None:
             existing = pd.concat([existing, new_data])
@@ -126,7 +127,7 @@ def update_eco2mix_data(retention_days=RETENTION_DAYS,verbose=True):
 def background_updater(retention_days=RETENTION_DAYS, freq=FREQ_UPDATE):
     while True:
         update_eco2mix_data(retention_days=retention_days, verbose=True)
-        time.sleep(freq * 60)  # 5 minutes
+        time.sleep(freq * 60)  # freq: frequency of updates in minutes
 
 
 
