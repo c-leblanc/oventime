@@ -104,10 +104,11 @@ async def background_job(application, retention_days=RETENTION_DAYS, freq=FREQ_U
     2. lancer check_score_job après chaque update
     """
     while True:
-        await asyncio.sleep(freq * 60)
-
         update_eco2mix_data(retention_days=retention_days, verbose=True)
         await check_score_job(application)
+        
+        await asyncio.sleep(freq * 60)
+
 
         
 
