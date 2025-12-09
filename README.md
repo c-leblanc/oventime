@@ -1,7 +1,9 @@
 # OvenTime
 
-Pour savoir si l'électricité que vous consommez est bas-carbone, la question à se poser est surtout de **quand** est-ce que vous la consommez.
-Ce bot telegram donne un aperçu simple en temps réel du réseau électrique en France pour savoir s’il est plutôt « vert » (énergie bas-carbone abondamment disponible) ou s’il est plutôt tendu, ce qui implique que toute consommation supplémentaire risque d’utiliser du gaz (et polluer).
+*L'électricité que vous consommez est-elle vraiment bas-carbone ? Ca dépend avant tout de **quand** est-ce que vous la consommez.*
+
+**OvenTime** est un bot Telegram qui aide à décider **si c’est un bon moment pour utiliser un appareil gourmand en électricité**, en fonction de l’état du réseau électrique français. ⚡🍳
+Il donne un aperçu simple en temps réel du réseau électrique en France pour savoir s’il est plutôt 🍃 **vert** 🍃 (énergie bas-carbone abondamment disponible) ou s’il est plutôt 🔥 **tendu** 🔥, ce qui implique que toute consommation supplémentaire risque d’utiliser du gaz (et polluer).
 
 👉 Interrogez-le pour savoir si c'est un moment eco-friendly pour démarrer quelque chose qui consomme beaucoup d'électricité (la pyrolise du four, le lave-linge, le sèche-linge...)
 
