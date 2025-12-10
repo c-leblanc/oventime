@@ -104,11 +104,12 @@ async def background_job(application, retention_days=RETENTION_DAYS, freq=FREQ_U
     2. lancer check_score_job après chaque update
     """
     while True:
-        update_eco2mix_data(retention_days=retention_days, verbose=True)
-        await check_score_job(application)
-        
+        try:
+            update_eco2mix_data(retention_days=retention_days, verbose=True)
+            await check_score_job(application)
+        except Exception as e:
+            print(f"[background_job] Erreur pendant la mise à jour : {e!r}")
         await asyncio.sleep(freq * 60)
-
 
         
 
