@@ -70,31 +70,46 @@ async def start_auto(update, context: ContextTypes.DEFAULT_TYPE):
     subscribers = context.application.bot_data.setdefault(SUBSCRIBERS_KEY, set())
     subscribers.add(chat_id)
     print("Subscriber to automatic messages added.")
-    await update.message.reply_text("✅ ACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡")
+    await update.message.reply_text("✅ ACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
 
 async def stop_auto(update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     subscribers = context.application.bot_data.setdefault(SUBSCRIBERS_KEY, set())
     subscribers.discard(chat_id)
     print("Subscriber to automatic messages removed.")
-    await update.message.reply_text("❌ INACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡")
+    await update.message.reply_text("❌ INACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
 
 
 
 async def check_score_job(application):
-    state = application.bot_data.setdefault("last_alert_high", False)
-    print(f"Last alert high ? {state}")
+    state_high = application.bot_data.setdefault("last_alert_high", False)
+    print(f"Last alert high ? {state_high}")
+    state_low = application.bot_data.setdefault("last_alert_low", False)
+    print(f"Last alert low ? {state_low}")
+
     diag = diagnostic()
     score = diag["score"]
     subscribers = application.bot_data.get(SUBSCRIBERS_KEY, set())
 
-    if score > 100 and not state:
+    text=None
+    if score <= 100 and state_high:
+        text = "❌ Fin de la période d'abondance ⚡🍃"
+        application.bot_data["last_alert_high"] = False
+    if score >= 0 and state_low:
+        text = "✅ Fin de la période de forte tension 🔥🏭"
+        application.bot_data["last_alert_low"] = False
+    if score > 100 and not state_high:
         text = f"🍃⚡ ABONDANCE ⚡🍃\nIl y a un surplus d'électricité décarbonée sur le réseau !\n(Score : {score:.0f}, /m for more info)"
+        application.bot_data["last_alert_high"] = True
+    if score < 0 and not state_low:
+        text = f"🔥🏭 FORTE TENSION 🔥🏭\nL'électricité se fait rare et on a démarré les centrales les plus polluantes !\n(Score : {score:.0f}, /m for more info)"
+        application.bot_data["last_alert_low"] = True
+
+
+    if text is not None:
         for chat_id in subscribers:
             await application.bot.send_message(chat_id=chat_id, text=text)
-        application.bot_data["last_alert_high"] = True
-    elif score <= 100 and state:
-        application.bot_data["last_alert_high"] = False
+
 
 
 async def background_job(application, retention_days=RETENTION_DAYS, freq=FREQ_UPDATE):
