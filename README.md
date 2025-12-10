@@ -23,3 +23,7 @@ Bot Telegram : https://t.me/oventime_bot
 - src/oven_time : logique principale (bot, API, traitement des données)
 - requirements.txt : dépendances Python
 - run_bot.py : script d’entrée
+
+## Source
+
+RTE, Données éCO2mix nationales temps réel : https://odre.opendatasoft.com/explore/dataset/eco2mix-national-tr
