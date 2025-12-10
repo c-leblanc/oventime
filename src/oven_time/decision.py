@@ -230,15 +230,15 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
     # Retrieve short-term cycle positions
     # ------------------------------------------------------------
     gasCCG_use_rate = cycle_whereat(
-        ["GAS_CCG"], target_time, data, window=100*4, mode="zero_to_max"
+        ["GAS_CCG"], target_time, data, window=7*24*4, mode="zero_to_max"
     )["GAS_CCG"]
 
     storage_phase = cycle_whereat(
-        ["STORAGE"], target_time, data, window=100*4, mode="min_to_max"
+        ["STORAGE"], target_time, data, window=7*24*4, mode="min_to_max"
     )["STORAGE"]
 
     storage_use_rate = cycle_whereat(
-        ["STORAGE"], target_time, data, window=100*4, mode="zero_to_max"
+        ["STORAGE"], target_time, data, window=7*24*4, mode="zero_to_max"
     )["STORAGE"]
 
     nuclear_use_rate = cycle_whereat(
