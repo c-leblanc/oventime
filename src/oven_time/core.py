@@ -56,8 +56,8 @@ def get_price_window(
     date_str = start_local.strftime("%d/%m")
 
     text = (
-        f"🌱⚡ *Fenêtre bas carbone à venir*\n\n"
-        f"🕒 De *{start_str}* à *{end_str}* ({date_str})\n"
+        f"🌱 *Fenêtre bas carbone à venir*\n"
+        f"🕒 De *{start_str}* à *{end_str}* ({date_str})\n\n"
         f"👉 Créneau idéal pour lancer les gros consommateur d'électricité."
     )
 
