@@ -123,22 +123,6 @@ def update_prod_data(retention_days=7, verbose=True):
 
 
 def update_price_data(retention_days=7, verbose=True):
-    """
-    Update the local raw ENTSO-E day-ahead price file (dayahead.csv).
-
-    Logic
-    -----
-    - Load local data if present.
-    - Detect the last timestamp already locally available.
-    - Download missing data *from last timestamp+1h up to tomorrow*.
-    - Keep only the last `retention_days` days (BUT always include tomorrow).
-    - Save updated CSV.
-
-    Notes
-    -----
-    - ENTSO-E returns timezone-aware timestamps (converted to UTC).
-    """
-
     def log(msg):
         if verbose:
             print(msg)
@@ -146,16 +130,23 @@ def update_price_data(retention_days=7, verbose=True):
     client = EntsoePandasClient(api_key=ENTSOE_API_KEY)
     raw_dir = PROJECT_ROOT / "data" / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
-
     price_file = raw_dir / "dayahead.csv"
 
-    # 1. Load local data
+    # 1. Load local data as a Series (file may have no header)
     if price_file.exists():
-        prices = pd.read_csv(price_file, index_col=0, parse_dates=True)
-        last_ts = prices.index.max()
+        # header=None ensures we read files without header correctly
+        df_local = pd.read_csv(price_file, header=None, index_col=0, parse_dates=True)
+        # convert to Series (first data column)
+        local = df_local.iloc[:, 0].copy()
+        # remove any column/name metadata
+        local.name = None
+        # ensure index is timezone-aware UTC
+        if local.index.tz is None:
+            local.index = local.index.tz_localize("UTC")
+        last_ts = local.index.max()
         log(f"Last timestamp in prices file: {last_ts}")
     else:
-        prices = None
+        local = None
         last_ts = None
         log("No existing price file found.")
 
@@ -164,13 +155,15 @@ def update_price_data(retention_days=7, verbose=True):
     tomorrow = (now + pd.Timedelta(days=1)).normalize()  # midnight next day
 
     if last_ts is None:
-        # First download: fetch from retention_days ago
         start = now - pd.Timedelta(days=retention_days)
     else:
-        # Continue from next hour
+        # make sure last_ts is tz-aware UTC
+        if last_ts.tz is None:
+            last_ts = last_ts.tz_localize("UTC")
         start = last_ts + pd.Timedelta(hours=1)
 
-    end = tomorrow + pd.Timedelta(days=1)  # full day-ahead horizon
+    # we want to include next day entirely (end exclusive okay)
+    end = tomorrow + pd.Timedelta(days=1)
     log(f"Download window: {start} → {end}")
 
     if start >= end:
@@ -179,34 +172,52 @@ def update_price_data(retention_days=7, verbose=True):
 
     # 3. Download missing price data
     try:
-        new_prices = client.query_day_ahead_prices(
-            COUNTRY_CODE,
-            start=start,
-            end=end
-        )
-        new_prices.index = new_prices.index.tz_convert("UTC")
-        log(f"Downloaded {len(new_prices)} price rows.")
+        new_prices = client.query_day_ahead_prices(COUNTRY_CODE, start=start, end=end)
     except Exception as e:
         log(f"No new price data available. ({e})")
         return
 
-    # 4. Concatenate
-    if prices is not None:
-        prices = pd.concat([prices, new_prices])
-        prices = prices[~prices.index.duplicated(keep="last")]
+    # normalize new_prices to Series without name and tz-aware index
+    if isinstance(new_prices, pd.DataFrame):
+        new = new_prices.iloc[:, 0].copy()
     else:
-        prices = new_prices
+        new = new_prices.copy()
 
-    # 5. Remove old data (but keep tomorrow)
+    new.name = None
+    # Some clients return tz-naive timestamps — ensure UTC tz
+    if new.index.tz is None:
+        # if timestamps look like they are UTC, localize; otherwise adjust accordingly
+        new.index = new.index.tz_localize("UTC")
+    else:
+        new.index = new.index.tz_convert("UTC")
+
+    log(f"Downloaded {len(new)} price rows.")
+
+    # 4. Concatenate Series safely
+    if local is not None:
+        combined = pd.concat([local, new])
+    else:
+        combined = new
+
+    # remove duplicates keeping the last (new data should override)
+    combined = combined[~combined.index.duplicated(keep="last")]
+
+    # sort index ascending (useful after concat)
+    combined = combined.sort_index()
+
+    # 5. Remove old data but always keep tomorrow
     limit = now - pd.Timedelta(days=retention_days)
-    keep_from = min(limit, tomorrow)  # never drop tomorrow
-    prices = prices[prices.index >= keep_from]
+    # keep_from should be the smaller (earlier) of limit and tomorrow so we never drop tomorrow
+    keep_from = min(limit, tomorrow)
+    combined = combined[combined.index >= keep_from]
 
     log(f"Removed data older than: {limit}.")
 
-    # 6. Save
-    prices.to_csv(price_file, header=False)
+    # 6. Save as CSV without header (you wanted no header / no column name)
+    # write index + values, no header row
+    combined.to_csv(price_file, header=False)
     log("Day-ahead price update complete.")
+
 
 def should_update_prices():
     """Retourne True si :
