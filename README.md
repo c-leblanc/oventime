@@ -14,6 +14,7 @@ Bot Telegram : https://t.me/oventime_bot
 | Commande | Description |
 |----------|------------|
 | `/m` | État du système électrique à l'instant (dernières données disponibles) |
+| `/q` | Meilleure fenêtre attendue dans les 12 prochaines heures |
 | `/a <heure>` | État du système électrique à un moment précis de la semaine passée (ex : `/a 15:30`, `/a hier 9am`) |
 | `/start_auto` | Active un message d'alerte en cas d'électricité bas-carbone abondante ou de forte tension sur le réseau |
 | `/stop_auto` | Désactive les messages d'alerte |
