@@ -27,4 +27,5 @@ Bot Telegram : https://t.me/oventime_bot
 
 ## Source
 
-RTE, Données éCO2mix nationales temps réel : https://odre.opendatasoft.com/explore/dataset/eco2mix-national-tr
+- RTE, Données éCO2mix nationales temps réel : https://odre.opendatasoft.com/explore/dataset/eco2mix-national-tr
+- ENTSO-E, Transparency Platform : https://transparency.entsoe.eu/
