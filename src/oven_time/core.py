@@ -39,6 +39,30 @@ def get_diagnostic(
 
     return(text)
 
+
+def get_price_window(
+    tz_output: str = "Europe/Paris"
+) -> str:
+    """
+    Renvoie un message texte décrivant la prochaine bonne fenêtre de prix bas.
+    """
+    start_utc, end_utc, avg_price = decision.price_window()
+
+    start_local = start_utc.tz_convert(tz_output)
+    end_local = end_utc.tz_convert(tz_output)
+
+    start_str = start_local.strftime("%H:%M")
+    end_str = end_local.strftime("%H:%M")
+    date_str = start_local.strftime("%d/%m")
+
+    text = (
+        f"🌱⚡ *Fenêtre bas carbone à venir*\n\n"
+        f"🕒 De *{start_str}* à *{end_str}* ({date_str})\n"
+        f"👉 Créneau idéal pour lancer les gros consommateur d'électricité."
+    )
+
+    return text
+
 if __name__ == "__main__":
     print(get_diagnostic())
 

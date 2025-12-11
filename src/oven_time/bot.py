@@ -6,9 +6,10 @@ import time
 import asyncio
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-from oven_time.core import get_diagnostic
+from oven_time.core import get_diagnostic, get_price_window
 from oven_time.decision import diagnostic
 from oven_time.api_eco2mix import update_eco2mix_data
+from oven_time.api_entsoe import update_price_data, should_update_prices
 from oven_time.config import TELEGRAM_TOKEN, RETENTION_DAYS, FREQ_UPDATE
 
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +60,12 @@ async def at(update, context):
     # appeler votre diagnostic
     msg = get_diagnostic(at_time=dt_utc)
     await update.message.reply_text(msg, parse_mode="Markdown")
+
+async def window(update, context):
+    """Répond avec la meilleure fenêtre à venir."""
+    msg = get_price_window()
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
 
 #############################################
 ## AUTOMATIC ALERT MESSAGES
@@ -116,14 +123,27 @@ async def background_job(application, retention_days=RETENTION_DAYS, freq=FREQ_U
     """
     Coroutine qui tourne en boucle infinie pour :
     1. mettre à jour eco2mix
-    2. lancer check_score_job après chaque update
+    2. mettre à jour les prix day-ahead si on est après midi et qu'ils manquent
+    3. lancer check_score_job après chaque update
     """
     while True:
         try:
+            # --- 1. Update eco2mix ---
             update_eco2mix_data(retention_days=retention_days, verbose=True)
+
+            # --- 2. Recompute score ---
             await check_score_job(application)
+
         except Exception as e:
-            print(f"[background_job] Erreur pendant la mise à jour : {e!r}")
+            print(f"[background_job] Erreur dans la MaJ des données de production : {e!r}")
+
+        # --- 3. Update prices if needed ---
+        if should_update_prices():
+            try:
+                update_price_data(retention_days=retention_days, verbose=True)
+            except Exception as e:
+                print(f"[background_job] Erreur dans la MaJ des données de prix: {e!r}")
+
         await asyncio.sleep(freq * 60)
 
         
@@ -139,6 +159,7 @@ def main():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("m", now))
     app.add_handler(CommandHandler("a", at))
+    app.add_handler(CommandHandler("q", window))
     app.add_handler(CommandHandler("start_auto", start_auto))
     app.add_handler(CommandHandler("stop_auto", stop_auto))
 

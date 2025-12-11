@@ -1,4 +1,5 @@
 from oven_time import processing
+from oven_time.config import PROJECT_ROOT
 import pandas as pd
 
 import pandas as pd
@@ -281,6 +282,60 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
         "nuclear_use_rate": nuclear_use_rate,
     }
 
+
+
+def price_window(
+    max_window = pd.Timedelta(hours=12),
+    relative_low: float = 0.20,
+    absolute_low: float = 10):
+    """
+    Retourne (start_time, end_time, avg_price)
+    de la plus longue séquence continue où price <= threshold.
+    """
+    # 1. Charge et tronque les données de prix
+    prices = pd.read_csv(PROJECT_ROOT / "data/raw/dayahead.csv", 
+                     names=["timestamp", "price"],
+                     index_col="timestamp", 
+                     parse_dates=True, 
+                     header=None)["price"]
+    now = pd.Timestamp.now(tz="UTC").floor("15min")
+    limit = now + max_window
+    prices = prices[prices.index >= now]
+    prices = prices[prices.index <= limit]
+
+    # 2. Determine le seuil au-dessous duquel les prix sont considérés bas
+    min_price = min(prices)
+    relative_threshold = min_price * (1 + relative_low)
+    threshold = max(relative_threshold, absolute_low)
+
+    # 3. Identifie la plus longue fenêtre de prix bas
+    
+    mask = prices <= threshold # masque des prix bas
+
+    # identifie les changements de groupe de True/False
+    # on incrémente le groupe à chaque passage de False -> True
+    group_id = (mask.ne(mask.shift(fill_value=False)) & mask).cumsum()
+
+    # on ne garde que les groupes où mask est True
+    low_groups = (
+        prices[mask]
+        .groupby(group_id[mask])
+    )
+
+    # sélectionne le groupe de plus grande longueur
+    best_group = max(low_groups, key=lambda kv: len(kv[1]))[1]
+
+    start_time = best_group.index[0]
+    end_time = best_group.index[-1]  # dernier quart d'heure inclus
+    avg_price = best_group.mean()
+
+    # si tu veux que end_time soit « fin de fenêtre » (exclu),
+    # ajoute 15 minutes :
+    # end_time = end_time + pd.Timedelta(minutes=15)
+
+    return start_time, end_time, avg_price
+
+
 if __name__ == "__main__":
-    print(diagnostic())
+    print(price_window())
 
