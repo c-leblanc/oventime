@@ -286,7 +286,7 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
 
 def price_window(
     max_window = pd.Timedelta(hours=12),
-    relative_low: float = 0.20,
+    relative_low: float = 0.30,
     absolute_low: float = 10):
     """
     Retourne (start_time, end_time, avg_price)
@@ -305,7 +305,8 @@ def price_window(
 
     # 2. Determine le seuil au-dessous duquel les prix sont considérés bas
     min_price = min(prices)
-    relative_threshold = min_price * (1 + relative_low)
+    max_price = max(prices)
+    relative_threshold = min_price + relative_low*(max_price-min_price)
     threshold = max(relative_threshold, absolute_low)
 
     # 3. Identifie la plus longue fenêtre de prix bas
