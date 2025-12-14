@@ -10,7 +10,7 @@ from oven_time.core import get_diagnostic, get_price_window
 from oven_time.decision import diagnostic
 from oven_time.api_eco2mix import update_eco2mix_data
 from oven_time.api_entsoe import update_price_data, should_update_prices
-from oven_time.config import TELEGRAM_TOKEN, RETENTION_DAYS, FREQ_UPDATE
+from oven_time.config import TELEGRAM_TOKEN, RETENTION_DAYS, FREQ_UPDATE, HIGH_SCORE_THRESHOLD, LOW_SCORE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY
 
 logging.basicConfig(level=logging.INFO)
 
@@ -63,7 +63,7 @@ async def at(update, context):
 
 async def window(update, context):
     """Répond avec la meilleure fenêtre à venir."""
-    msg = get_price_window()
+    msg = get_price_window(method=WINDOW_METHOD,severity=OTSU_SEVERITY)
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 
@@ -99,16 +99,16 @@ async def check_score_job(application):
     subscribers = application.bot_data.get(SUBSCRIBERS_KEY, set())
 
     text=None
-    if score <= 100 and state_high:
+    if score <= HIGH_SCORE_THRESHOLD and state_high:
         text = "❌ Fin de la période d'abondance ⚡🍃"
         application.bot_data["last_alert_high"] = False
-    if score >= 0 and state_low:
+    if score >= LOW_SCORE_THRESHOLD and state_low:
         text = "✅ Fin de la période de forte tension 🔥🏭"
         application.bot_data["last_alert_low"] = False
-    if score > 100 and not state_high:
+    if score > HIGH_SCORE_THRESHOLD and not state_high:
         text = f"🍃⚡ ABONDANCE ⚡🍃\nIl y a un surplus d'électricité décarbonée sur le réseau !\n(Score : {score:.0f}, /m for more info)"
         application.bot_data["last_alert_high"] = True
-    if score < 0 and not state_low:
+    if score < LOW_SCORE_THRESHOLD and not state_low:
         text = f"🔥🏭 FORTE TENSION 🔥🏭\nL'électricité se fait rare et on a démarré les centrales les plus polluantes !\n(Score : {score:.0f}, /m for more info)"
         application.bot_data["last_alert_low"] = True
 

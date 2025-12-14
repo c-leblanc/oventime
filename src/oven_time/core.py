@@ -41,28 +41,30 @@ def get_diagnostic(
 
 
 def get_price_window(
+    method: str = "otsu",
+    severity: float = 1.0,
     tz_output: str = "Europe/Paris"
 ) -> str:
     """
     Renvoie un message texte décrivant la prochaine bonne fenêtre de prix bas.
     """
-    start_utc, end_utc, avg_price = decision.price_window()
+    start_utc, end_utc = decision.price_window(method=method,severity=severity)
 
     start_local = start_utc.tz_convert(tz_output)
     end_local = end_utc.tz_convert(tz_output)
 
     start_str = start_local.strftime("%H:%M")
     end_str = end_local.strftime("%H:%M")
-    date_str = start_local.strftime("%d/%m")
+    #date_str = start_local.strftime("%d/%m")
 
     text = (
         f"⚡🌱 Meilleure fenêtre dans les 12h à venir : "
-        f"🕒 *{start_str}* à *{end_str}* 🕒 (le {date_str})\n\n"
+        f"🕒 *{start_str}* à *{end_str}* 🕒\n"
         f"👉 Créneau idéal pour lancer les gros consommateurs d'électricité"
     )
 
     return text
 
 if __name__ == "__main__":
-    print(get_price_window())
+    print(get_price_window(severity=0.5))
 

@@ -3,6 +3,7 @@ from oven_time.config import PROJECT_ROOT
 import pandas as pd
 
 import pandas as pd
+import numpy as np
 from typing import Union, List
 
 
@@ -284,57 +285,155 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
 
 
 
+def optimal_threshold_otsu(prices, severity=1.0):
+    """
+    Compute an optimal low-price threshold using an Otsu-like criterion.
+
+    The threshold maximizes the between-class variance between
+    low-price and high-price groups.
+
+    Parameters
+    ----------
+    prices : pd.Series
+        Time-indexed price series.
+    severity : float >= 0
+        Severity parameter.
+        - 1.0 : standard Otsu
+        - >1  : more selective (lower threshold)
+        - <1  : more permissive
+
+    Returns
+    -------
+    float
+        Optimal threshold value.
+
+    Raises
+    ------
+    ValueError
+        If the threshold cannot be determined (e.g. constant or empty series).
+    """
+    values = prices.dropna().values
+
+    if len(values) == 0:
+        raise ValueError("Empty price series: cannot compute Otsu threshold.")
+
+    candidates = np.unique(values)
+
+    best_tau, best_score = None, -np.inf
+
+    for tau in candidates:
+        low = values[values <= tau]
+        high = values[values > tau]
+
+        # Both groups must be non-empty
+        if len(low) == 0 or len(high) == 0:
+            continue
+
+        pL = len(low) / len(values)
+        pH = 1 - pL
+
+        # Between-class variance
+        score = (pL ** severity) * pH * (low.mean() - high.mean())**2
+
+        if score > best_score:
+            best_score, best_tau = score, tau
+
+    if best_tau is None:
+        raise ValueError("Unable to determine an Otsu threshold (constant prices).")
+
+    return best_tau
+
+
 def price_window(
-    max_window = pd.Timedelta(hours=12),
+    max_window=pd.Timedelta(hours=12),
+    method: str = "otsu",
+    severity: float = 1.0,
     relative_low: float = 0.30,
-    absolute_low: float = 10):
+    absolute_low: float = 10
+):
     """
-    Retourne (start_time, end_time, avg_price)
-    de la plus longue séquence continue où price <= threshold.
+    Identify the longest contiguous low-price time window
+    within the next `max_window` horizon.
+
+    Parameters
+    ----------
+    max_window : pd.Timedelta
+        Maximum forward-looking time window.
+    method : {"otsu", "arbitrary"}
+        Method used to determine the low-price threshold.
+    relative_low : float
+        Relative threshold position (only used if method="arbitrary").
+    absolute_low : float
+        Absolute minimum price threshold (only used if method="arbitrary").
+
+    Returns
+    -------
+    (pd.Timestamp, pd.Timestamp, float)
+        Start time, end time, and average price of the selected window.
+
+    Raises
+    ------
+    ValueError
+        If no valid low-price window can be identified.
     """
-    # 1. Charge et tronque les données de prix
-    prices = pd.read_csv(PROJECT_ROOT / "data/raw/dayahead.csv", 
-                     names=["timestamp", "price"],
-                     index_col="timestamp", 
-                     parse_dates=True, 
-                     header=None)["price"]
+
+    # ------------------------------------------------------------------
+    # 1. Load and truncate price data
+    # ------------------------------------------------------------------
+    prices = pd.read_csv(
+        PROJECT_ROOT / "data/raw/dayahead.csv",
+        names=["timestamp", "price"],
+        index_col="timestamp",
+        parse_dates=True,
+        header=None
+    )["price"]
+
     now = pd.Timestamp.now(tz="UTC").floor("15min")
     limit = now + max_window
-    prices = prices[prices.index >= now]
-    prices = prices[prices.index <= limit]
 
-    # 2. Determine le seuil au-dessous duquel les prix sont considérés bas
-    min_price = min(prices)
-    max_price = max(prices)
-    relative_threshold = min_price + relative_low*(max_price-min_price)
-    threshold = max(relative_threshold, absolute_low)
+    prices = prices.loc[(prices.index >= now) & (prices.index <= limit)]
 
-    # 3. Identifie la plus longue fenêtre de prix bas
-    
-    mask = prices <= threshold # masque des prix bas
+    if prices.empty:
+        raise ValueError("No price data available in the selected time window.")
 
-    # identifie les changements de groupe de True/False
-    # on incrémente le groupe à chaque passage de False -> True
+    # ------------------------------------------------------------------
+    # 2. Determine the low-price threshold
+    # ------------------------------------------------------------------
+    method = method.lower()
+
+    if method == "arbitrary":
+        min_price = prices.min()
+        max_price = prices.max()
+        relative_threshold = min_price + relative_low * (max_price - min_price)
+        threshold = max(relative_threshold, absolute_low)
+
+    elif method == "otsu":
+        threshold = optimal_threshold_otsu(prices, severity=severity)
+
+    else:
+        raise ValueError(f"Invalid method '{method}' for threshold determination.")
+
+    # ------------------------------------------------------------------
+    # 3. Identify the longest contiguous low-price window
+    # ------------------------------------------------------------------
+    mask = prices <= threshold
+
+    if not mask.any():
+        raise ValueError("No prices below the computed threshold.")
+
+    # Identify contiguous True segments
     group_id = (mask.ne(mask.shift(fill_value=False)) & mask).cumsum()
 
-    # on ne garde que les groupes où mask est True
-    low_groups = (
-        prices[mask]
-        .groupby(group_id[mask])
-    )
+    low_groups = prices[mask].groupby(group_id[mask])
 
-    # sélectionne le groupe de plus grande longueur
+    # Select the longest group (by number of time steps)
     best_group = max(low_groups, key=lambda kv: len(kv[1]))[1]
 
     start_time = best_group.index[0]
-    end_time = best_group.index[-1]  # dernier quart d'heure inclus
-    avg_price = best_group.mean()
+    end_time = best_group.index[-1] + pd.Timedelta(minutes=15)
+    #avg_price = best_group.mean()
 
-    # si tu veux que end_time soit « fin de fenêtre » (exclu),
-    # ajoute 15 minutes :
-    # end_time = end_time + pd.Timedelta(minutes=15)
-
-    return start_time, end_time, avg_price
+    return start_time, end_time
 
 
 if __name__ == "__main__":
