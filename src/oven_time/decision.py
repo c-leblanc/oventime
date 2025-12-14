@@ -265,8 +265,8 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
     # Malus points when OCGT plants are on (typically up to 500 MW, i.e. 50 points)
     # ------------------------------------------------------------
     ocgt_malus=0
-    if gasCCG_use_rate >= 0.7:
-            ocgt_malus = max(-50,-data["GAS_TAC"].iloc[-1]/10)
+    if gasCCG_use_rate >= 0.3:
+            ocgt_malus = max(-50,-data.loc[target_time, "GAS_TAC"]/10)
             score += ocgt_malus
 
 
@@ -437,5 +437,5 @@ def price_window(
 
 
 if __name__ == "__main__":
-    print(price_window())
+    print(diagnostic(at_time=pd.Timestamp("2025-12-13 18:00", tz="UTC")))
 
