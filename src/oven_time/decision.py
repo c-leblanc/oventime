@@ -333,7 +333,7 @@ def optimal_threshold_otsu(prices, severity=1.0):
         pH = 1 - pL
 
         # Between-class variance
-        score = (pL ** severity) * pH * (low.mean() - high.mean())**2
+        score = (pL ** (1/severity)) * pH * (low.mean() - high.mean())**2
 
         if score > best_score:
             best_score, best_tau = score, tau

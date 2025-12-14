@@ -66,5 +66,5 @@ def get_price_window(
     return text
 
 if __name__ == "__main__":
-    print(get_price_window(severity=0.5))
+    print(get_price_window(severity=2))
 

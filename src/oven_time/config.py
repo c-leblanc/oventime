@@ -26,9 +26,9 @@ FREQ_UPDATE = 5 # Frequency at which data is updated
 
 ## Automatic Updates
 HIGH_SCORE_THRESHOLD = 100 # Score above which an automated "abundance" message is sent
-LOW_SCORE_THRESHOLD = 0 # Score above which an automated "tension" message is sent
+LOW_SCORE_THRESHOLD = 10 # Score above which an automated "tension" message is sent
 
 ## Best window determination
 WINDOW_METHOD = "otsu"
-OTSU_SEVERITY = 0.5
+OTSU_SEVERITY = 2
 
