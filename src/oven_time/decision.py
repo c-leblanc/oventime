@@ -367,8 +367,8 @@ def price_window(
 
     Returns
     -------
-    (pd.Timestamp, pd.Timestamp)
-        Start time, end time.
+    (pd.Timestamp, pd.Timestamp, int)
+        Start time, end time, window range effectively considered (available prices).
 
     Raises
     ------
@@ -394,6 +394,7 @@ def price_window(
 
     if prices.empty:
         raise ValueError("No price data available in the selected time window.")
+    else: eff_window = int((max(prices.index) - now)/pd.Timedelta(hours=1))
 
     # ------------------------------------------------------------------
     # 2. Determine the low-price threshold
@@ -432,7 +433,7 @@ def price_window(
     end_time = best_group.index[-1] + pd.Timedelta(minutes=15)
     #avg_price = best_group.mean()
 
-    return start_time, end_time
+    return start_time, end_time, eff_window
 
 
 if __name__ == "__main__":

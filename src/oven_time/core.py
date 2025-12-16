@@ -49,7 +49,7 @@ def get_price_window(
     """
     Renvoie un message texte décrivant la prochaine bonne fenêtre de prix bas.
     """
-    start_utc, end_utc = decision.price_window(method=method,severity=severity)
+    start_utc, end_utc, eff_window = decision.price_window(method=method,severity=severity)
 
     start_local = start_utc.tz_convert(tz_output)
     end_local = end_utc.tz_convert(tz_output)
@@ -59,7 +59,7 @@ def get_price_window(
     #date_str = start_local.strftime("%d/%m")
 
     text = (
-        f"⚡🌱 Meilleure fenêtre dans les {WINDOW_RANGE}h à venir : "
+        f"⚡🌱 Meilleure fenêtre dans les {eff_window}h à venir : "
         f"🕒 *{start_str}* à *{end_str}* 🕒\n"
         f"👉 Créneau idéal pour lancer les gros consommateurs d'électricité"
     )
