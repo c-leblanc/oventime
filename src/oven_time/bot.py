@@ -1,8 +1,6 @@
 import logging
 from pandas import Timestamp
 import dateparser
-import threading
-import time
 import asyncio
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 

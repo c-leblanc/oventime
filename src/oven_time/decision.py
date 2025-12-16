@@ -1,6 +1,5 @@
 from oven_time import processing
-from oven_time.config import PROJECT_ROOT
-import pandas as pd
+from oven_time.config import PROJECT_ROOT, WINDOW_RANGE
 
 import pandas as pd
 import numpy as np
@@ -345,7 +344,7 @@ def optimal_threshold_otsu(prices, severity=1.0):
 
 
 def price_window(
-    max_window=pd.Timedelta(hours=12),
+    max_window=pd.Timedelta(hours=WINDOW_RANGE),
     method: str = "otsu",
     severity: float = 1.0,
     relative_low: float = 0.30,
@@ -368,8 +367,8 @@ def price_window(
 
     Returns
     -------
-    (pd.Timestamp, pd.Timestamp, float)
-        Start time, end time, and average price of the selected window.
+    (pd.Timestamp, pd.Timestamp)
+        Start time, end time.
 
     Raises
     ------

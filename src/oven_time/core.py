@@ -1,4 +1,5 @@
 from oven_time import api_eco2mix, decision
+from oven_time.config import WINDOW_RANGE
 
 def concl_from_score(score: float) -> str:
     if score > 100:
@@ -58,7 +59,7 @@ def get_price_window(
     #date_str = start_local.strftime("%d/%m")
 
     text = (
-        f"⚡🌱 Meilleure fenêtre dans les 12h à venir : "
+        f"⚡🌱 Meilleure fenêtre dans les {WINDOW_RANGE}h à venir : "
         f"🕒 *{start_str}* à *{end_str}* 🕒\n"
         f"👉 Créneau idéal pour lancer les gros consommateurs d'électricité"
     )
