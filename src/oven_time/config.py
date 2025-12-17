@@ -47,5 +47,5 @@ LOW_SCORE_THRESHOLD = 10 # Score below which an automated "tension" message is s
 ## Best window determination
 WINDOW_METHOD = "otsu"
 OTSU_SEVERITY = 1
-WINDOW_RANGE = 24
+WINDOW_RANGE = 12
 
