@@ -52,7 +52,7 @@ def cycle_whereat(
 
     # If start index is negative, the requested window exceeds available data
     if start_idx < 0:
-        raise ValueError(f"Données absentes pour la date demandée ({target_time.tz_convert(tz=TIMEZONE)}):"
+        raise ValueError(f"Données absentes pour la date demandée ({target_time.tz_convert(tz=TIMEZONE)}) : "
                          f"veuillez entrer une date comprise entre il y a {RETENTION_DAYS-window//(24*4)} jours et maintenant.")
 
     # Slice the relevant window
