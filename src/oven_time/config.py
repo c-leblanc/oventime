@@ -32,9 +32,13 @@ if _missing:
 # Parameters
 ############################################
 
+## Time Zone
+TIMEZONE = "Europe/Paris"
+
 ## Data
-RETENTION_DAYS = 10 # Data to keep in memory
-FREQ_UPDATE = 5 # Frequency at which data is updated
+RETENTION_DAYS = 22 # Data to keep in memory
+FREQ_UPDATE_ECO2MIX = 20 # Eco2Mix Data : Time elapsed since last data that triggers an update attempt (in minutes).
+MIN_FORESIGHT_PRICES = 12 # Price Data from ENTSO-E : Update attempt triggered if last data less than MIN_FORESIGHT_PRICES in the future
 
 ## Automatic Updates
 HIGH_SCORE_THRESHOLD = 100 # Score above which an automated "abundance" message is sent
@@ -42,6 +46,6 @@ LOW_SCORE_THRESHOLD = 10 # Score below which an automated "tension" message is s
 
 ## Best window determination
 WINDOW_METHOD = "otsu"
-OTSU_SEVERITY = 2
+OTSU_SEVERITY = 1
 WINDOW_RANGE = 24
 

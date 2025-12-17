@@ -1,14 +1,11 @@
 import logging
-from pandas import Timestamp
-import dateparser
+from telegram.ext import ContextTypes
 import asyncio
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-from oven_time.core import get_diagnostic, get_price_window
+from oven_time.data_download import should_update_eco2mix, update_eco2mix_data, should_update_prices, update_price_data
+from oven_time.interface import get_diagnostic, get_price_window
 from oven_time.decision import diagnostic
-from oven_time.api_eco2mix import update_eco2mix_data
-from oven_time.api_entsoe import update_price_data, should_update_prices
-from oven_time.config import TELEGRAM_TOKEN, RETENTION_DAYS, FREQ_UPDATE, HIGH_SCORE_THRESHOLD, LOW_SCORE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY
+from oven_time.config import HIGH_SCORE_THRESHOLD, LOW_SCORE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,33 +27,13 @@ async def at(update, context):
     time_str = " ".join(context.args)
 
     try:
-        # parser avec dateparser pour plus de flexibilité
-        dt = dateparser.parse(
-            time_str,
-            settings={
-                'TIMEZONE': 'Europe/Paris',
-                'RETURN_AS_TIMEZONE_AWARE': True,
-                'PREFER_DATES_FROM': 'past',  # ou 'future' selon vos besoins
-            }
-        )
-
-        if dt is None:
-            raise ValueError("Impossible d'interpréter la date/heure.")
-
-        # convertir en Timestamp pandas
-        dt = Timestamp(dt)
-
-        # convertir en UTC
-        dt_utc = dt.tz_convert("UTC")
-
-    except Exception:
-        await update.message.reply_text(
-            f"Format d'heure invalide : {time_str}\nExemples valides : 9, 9am, 21:30, hier 9am, demain 14h"
-        )
+        msg = get_diagnostic(at_time=time_str)
+    except ValueError as e:
+        await update.message.reply_text(str(e), parse_mode="Markdown")
         return
-
-    # appeler votre diagnostic
-    msg = get_diagnostic(at_time=dt_utc)
+    except Exception as e:
+        await update.message.reply_text(f"Erreur lors du calcul du diagnostic", parse_mode="Markdown")
+        return
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def window(update, context):
@@ -116,55 +93,37 @@ async def check_score_job(application):
             await application.bot.send_message(chat_id=chat_id, text=text)
 
 
-
-async def background_job(application, retention_days=RETENTION_DAYS, freq=FREQ_UPDATE):
+async def background_job(application, freq=5):
     """
     Coroutine qui tourne en boucle infinie pour :
     1. mettre à jour eco2mix
     2. mettre à jour les prix day-ahead si on est après midi et qu'ils manquent
     3. lancer check_score_job après chaque update
     """
+    last_timestamp_eco2mix = None
+    last_timestamp_prices = None
     while True:
-        try:
-            # --- 1. Update eco2mix ---
-            update_eco2mix_data(retention_days=retention_days, verbose=True)
+        if should_update_eco2mix(last_timestamp_eco2mix):
+            try:
+                # --- 1. Update eco2mix ---
+                last_timestamp_eco2mix = update_eco2mix_data(verbose=True)
 
-            # --- 2. Recompute score ---
-            await check_score_job(application)
+                # --- 2. Recompute score and triggers alerts ---
+                await check_score_job(application)
 
-        except Exception as e:
-            print(f"[background_job] Erreur dans la MaJ des données de production : {e!r}")
+            except Exception as e:
+                print(f"[background_job] Erreur dans la MaJ des données de production : {e!r}")
 
         # --- 3. Update prices if needed ---
-        if should_update_prices():
+        if should_update_prices(last_timestamp_prices):
             try:
-                update_price_data(retention_days=retention_days, verbose=True)
+                update_price_data(verbose=True)
             except Exception as e:
                 print(f"[background_job] Erreur dans la MaJ des données de prix: {e!r}")
 
         await asyncio.sleep(freq * 60)
 
+
         
 
 
-async def on_startup(application):
-    application.create_task(background_job(application))
-
-
-def main():
-    
-    #Launch the bot
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("m", now))
-    app.add_handler(CommandHandler("a", at))
-    app.add_handler(CommandHandler("q", window))
-    app.add_handler(CommandHandler("start_auto", start_auto))
-    app.add_handler(CommandHandler("stop_auto", stop_auto))
-
-    # enregistrement du callback de startup
-    app.post_init = on_startup
-
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()

@@ -1,5 +1,5 @@
-from oven_time import processing
-from oven_time.config import PROJECT_ROOT, WINDOW_RANGE
+from oven_time import data_processing
+from oven_time.config import PROJECT_ROOT, WINDOW_RANGE, RETENTION_DAYS, TIMEZONE
 
 import pandas as pd
 import numpy as np
@@ -11,7 +11,7 @@ def cycle_whereat(
     target_time: pd.Timestamp,
     data: pd.DataFrame,
     mode: str = "min_to_max",
-    window: int = 24
+    window: int = 7*24*4
 ):
     """
     Compute normalized position of one or several technologies within a
@@ -41,7 +41,8 @@ def cycle_whereat(
 
     # Ensure the target timestamp exists in the dataset
     if target_time not in data.index:
-        raise ValueError(f"Timestamp {target_time} is not present in the dataset.")
+        raise ValueError(f"Données absentes pour la date demandée ({target_time.tz_convert(tz=TIMEZONE)}) : "
+                         f"veuillez entrer une date comprise entre il y a {RETENTION_DAYS-window//(24*4)} jours et maintenant.")
 
     # ------------------------------------------------------------
     # Extract the time window ending at target_time
@@ -51,10 +52,8 @@ def cycle_whereat(
 
     # If start index is negative, the requested window exceeds available data
     if start_idx < 0:
-        raise ValueError(
-            f"Requested window size {window} exceeds available data "
-            f"by {-start_idx} rows."
-        )
+        raise ValueError(f"Données absentes pour la date demandée ({target_time.tz_convert(tz=TIMEZONE)}):"
+                         f"veuillez entrer une date comprise entre il y a {RETENTION_DAYS-window//(24*4)} jours et maintenant.")
 
     # Slice the relevant window
     window_df = data.iloc[start_idx : idx_target + 1]
@@ -105,8 +104,8 @@ def cycle_whereat(
 def get_cycle_whereat(
     tec: Union[str, List[str]],
     mode: str = "min_to_max",
-    window: int = 24,
-    at_time: Union[None, str, pd.Timestamp] = None
+    window: int = 7*24*4,
+    target_time: Union[None, str, pd.Timestamp] = None
 ):
     """
     Wrapper for `cycle_whereat` that:
@@ -144,25 +143,7 @@ def get_cycle_whereat(
         single = True
 
     # Load entire dataset
-    data_full = processing.init_data()
-
-    # ------------------------------------------------------------
-    # Interpret and harmonize the target time
-    # ------------------------------------------------------------
-    if at_time is None:
-        target_time = data_full.index.max()
-    else:
-        target_time = pd.Timestamp(at_time)
-
-        if target_time.tzinfo is None:
-            # Localize using the dataset's timezone
-            target_time = target_time.tz_localize(data_full.index.tz)
-        else:
-            # Convert to dataset timezone
-            target_time = target_time.tz_convert(data_full.index.tz)
-
-        # Align to dataset's granularity (assumed 15min)
-        target_time = target_time.floor("15min")
+    data_full = data_processing.init_data()
 
     # Compute the cycle index
     result = cycle_whereat(
@@ -177,7 +158,7 @@ def get_cycle_whereat(
 
 
 
-def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
+def diagnostic(target_time: pd.Timestamp = None):
     """
     Provide a global qualitative + quantitative diagnostic of power system tightness,
     based on the current position of:
@@ -210,22 +191,10 @@ def diagnostic(at_time: Union[None, str, pd.Timestamp] = None):
     # ------------------------------------------------------------
     # Load full dataset
     # ------------------------------------------------------------
-    data = processing.init_data()
+    data = data_processing.init_data()
 
-    # ------------------------------------------------------------
-    # Interpret target time
-    # ------------------------------------------------------------
-    if at_time is None:
+    if target_time is None:
         target_time = data.index.max()
-    else:
-        target_time = pd.Timestamp(at_time)
-
-        if target_time.tzinfo is None:
-            target_time = target_time.tz_localize(data.index.tz)
-        else:
-            target_time = target_time.tz_convert(data.index.tz)
-
-        target_time = target_time.floor("15min")
 
     # ------------------------------------------------------------
     # Retrieve short-term cycle positions
