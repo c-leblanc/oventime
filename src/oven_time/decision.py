@@ -48,8 +48,9 @@ def cycle_whereat(
     # Extract the time window ending at target_time
     # ------------------------------------------------------------
     idx_target = data.index.get_loc(target_time)
+    print(idx_target)
     start_idx = idx_target - window + 1
-
+    print(start_idx)
     # If start index is negative, the requested window exceeds available data
     if start_idx < 0:
         raise ValueError(f"Données absentes pour la date demandée ({target_time.tz_convert(tz=TIMEZONE)}) : "
@@ -156,8 +157,6 @@ def get_cycle_whereat(
 
     return result[tec[0]] if single else result
 
-
-
 def diagnostic(target_time: pd.Timestamp = None):
     """
     Provide a global qualitative + quantitative diagnostic of power system tightness,
@@ -251,8 +250,6 @@ def diagnostic(target_time: pd.Timestamp = None):
         "nuclear_use_rate": nuclear_use_rate,
     }
 
-
-
 def optimal_threshold_otsu(prices, severity=1.0):
     """
     Compute an optimal low-price threshold using an Otsu-like criterion.
@@ -310,7 +307,6 @@ def optimal_threshold_otsu(prices, severity=1.0):
         raise ValueError("Unable to determine an Otsu threshold (constant prices).")
 
     return best_tau
-
 
 def price_window(
     max_window=pd.Timedelta(hours=WINDOW_RANGE),
@@ -406,5 +402,5 @@ def price_window(
 
 
 if __name__ == "__main__":
-    print(diagnostic(at_time=pd.Timestamp("2025-12-13 18:00", tz="UTC")))
+    print(diagnostic(target_time=pd.Timestamp("2025-12-17 12:30", tz="UTC")))
 

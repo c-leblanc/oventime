@@ -137,6 +137,7 @@ def update_eco2mix_data(
         else:
             combined = new_data
 
+        local = combined
         last_timestamp = combined.index.max()
         start = last_timestamp + pd.Timedelta(minutes=15)
 
@@ -254,7 +255,7 @@ def update_price_data(
     log("Day-ahead price update complete.")
 
     # 7. Return the last timestamp with complete data
-    while len(combined) > 0 and combined.iloc[-1].isna():
+    while len(combined) > 0 and pd.isna(combined.iloc[-1]):
             combined = combined.iloc[:-1]
     last_timestamp = combined.index.max()
     return(last_timestamp)
