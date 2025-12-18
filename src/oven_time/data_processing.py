@@ -11,7 +11,7 @@ def init_data():
         if input_path.stat().st_mtime <= out_mtime:
             return pd.read_parquet(output_path)
     
-    data = pd.read_csv(PROJECT_ROOT / "data/raw/eco2mix.csv", index_col=0, parse_dates=True)
+    data = pd.read_parquet(PROJECT_ROOT / "data/raw/eco2mix.parquet")
     data = data.drop(["perimetre","nature","date","heure"], axis=1)
     data = data.drop(['ech_physiques','taux_co2', 'ech_comm_angleterre', 'ech_comm_espagne','ech_comm_italie', 'ech_comm_suisse', 'ech_comm_allemagne_belgique'], axis=1)
 
