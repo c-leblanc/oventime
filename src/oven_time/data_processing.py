@@ -17,7 +17,7 @@ def init_data():
 
     data["RENEWABLE"] = data["eolien"] + data["solaire"] + data["hydraulique_fil_eau_eclusee"]
     data["NUCLEAR"] = data["nucleaire"]
-    data["STORAGE"] = data['hydraulique_lacs'] + data['hydraulique_step_turbinage'] + data['destockage_batterie'] + data['stockage_batterie']
+    data["STORAGE"] = data['hydraulique_lacs'] + data['hydraulique_step_turbinage'] + data['pompage'] + data['destockage_batterie'] + data['stockage_batterie']
     data["GAS_CCG"] = data['gaz_ccg']
     data["GAS_TAC"] = data['gaz_tac']
     data["OTHER"] = data['charbon']+data['gaz_autres']+data['fioul_tac']+data['fioul_autres']+data['gaz_cogen']+data['fioul_cogen']+data["bioenergies"]

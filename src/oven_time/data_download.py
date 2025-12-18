@@ -277,8 +277,6 @@ def should_update_prices(
         last_timestamp = pd.to_datetime(prices.index[-1], utc=True)
 
     now = pd.Timestamp.now(tz="UTC")
-    print(now + pd.Timedelta(hours=min_foresight_prices))
-    print(last_timestamp)
     return last_timestamp < (now + pd.Timedelta(hours=min_foresight_prices))
 
 
@@ -310,6 +308,6 @@ def should_update_eco2mix(
 
 
 if __name__ == "__main__":
-    print(should_update_prices())
-    #print(update_eco2mix_data())
-    #print(update_price_data())
+    #print(should_update_prices())
+    print(update_eco2mix_data())
+    print(update_price_data())
