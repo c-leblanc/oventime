@@ -104,7 +104,6 @@ async def background_job(application, freq=5):
     last_timestamp_prices = None
     while True:
         if should_update_eco2mix(last_timestamp_eco2mix):
-            print("[Update Eco2Mix Data]")
             try:
                 # --- 1. Update eco2mix ---
                 last_timestamp_eco2mix = update_eco2mix_data(verbose=True)
@@ -117,7 +116,6 @@ async def background_job(application, freq=5):
 
         # --- 3. Update prices if needed ---
         if should_update_prices(last_timestamp_prices):
-            print("[Update ENTSO-E Day-Ahead Price Data]")
             try:
                 update_price_data(verbose=True)
             except Exception as e:
