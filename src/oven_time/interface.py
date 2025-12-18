@@ -121,6 +121,6 @@ def get_price_window(
     return text
 
 if __name__ == "__main__":
-    print(get_diagnostic("10:15"))
-    #print(get_price_window(severity=2))
+    #print(get_diagnostic("10:15"))
+    print(get_price_window(severity=2))
 

@@ -342,13 +342,7 @@ def price_window(
     # ------------------------------------------------------------------
     # 1. Load and truncate price data
     # ------------------------------------------------------------------
-    prices = pd.read_csv(
-        PROJECT_ROOT / "data/raw/dayahead.csv",
-        names=["timestamp", "price"],
-        index_col="timestamp",
-        parse_dates=True,
-        header=None
-    )["price"]
+    prices = pd.read_parquet(PROJECT_ROOT / "data/raw/DAprices.parquet")["price"]
 
     now = pd.Timestamp.now(tz="UTC").floor("15min")
     limit = now + max_window
@@ -400,8 +394,7 @@ def price_window(
 
 
 if __name__ == "__main__":
+    print(price_window())
     #print(diagnostic(target_time=pd.Timestamp("2025-12-18 09:15", tz="UTC")))
-    print(cycle_whereat(
-        ["STORAGE"], pd.Timestamp("2025-12-18 09:00", tz="UTC"), data=data_processing.init_data(), window=7*24*4, mode="min_to_max"
-    ))
+    #print(cycle_whereat(["STORAGE"], pd.Timestamp("2025-12-18 09:00", tz="UTC"), data=data_processing.init_data(), window=7*24*4, mode="min_to_max"))
 

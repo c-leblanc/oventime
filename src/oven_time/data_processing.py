@@ -5,7 +5,7 @@ from oven_time.config import PROJECT_ROOT
 def init_data():
     # If no recent changes in raw data, reloads last processed data
     output_path = Path(PROJECT_ROOT / "data/processed/init_data.parquet")
-    input_path = Path(PROJECT_ROOT / "data/raw/eco2mix.csv")
+    input_path = Path(PROJECT_ROOT / "data/raw/eco2mix.parquet")
     if output_path.exists():
         out_mtime = output_path.stat().st_mtime
         if input_path.stat().st_mtime <= out_mtime:
@@ -29,7 +29,6 @@ def init_data():
 
     processed_dir = PROJECT_ROOT / "data" / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
-    #data.to_csv(PROJECT_ROOT / "data/processed/init_data.csv", index=True, float_format="%.0f")
     data.to_parquet(PROJECT_ROOT / "data/processed/init_data.parquet")
 
     return(data)
