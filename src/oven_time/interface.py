@@ -80,10 +80,12 @@ def get_diagnostic(
     # Qualitative interpretation for real-time feedback
     # ------------------------------------------------------------
     ccl = concl_from_score(diag["score"])
+    stock_ou_destock = "on déstocke"
+    if diag["storage_use_rate"]<0: stock_ou_destock = "on stocke"
     text = (
         f"📊 *Etat du système* à {diag['time'].tz_convert(tz_output).strftime('%H:%M')} ({diag['time'].tz_convert(tz_output).strftime('%d/%m')})\n\n"
         f"🔥 Gaz mobilisé à {diag['gasCCG_use_rate']*100:.0f}%\n"
-        f"💧 Hydro/Stockage mobilisé à {diag['storage_use_rate']*100:.0f}%\n"
+        f"💧 Hydro/Stockage à {diag['storage_use_rate']*100:.0f}% (**"+stock_ou_destock+"**)\n"
         f"⚛️ Nucléaire à {diag['nuclear_use_rate']*100:.1f}% de sa dispo\n"
         f"🔎 *Score: {diag['score']:.0f}*\n\n"
         f"👉 {ccl}"
