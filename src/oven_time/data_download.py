@@ -271,13 +271,15 @@ def should_update_prices(
         price_file = PROJECT_ROOT / "data" / "raw" / "DAprices.parquet"
         if not price_file.exists():
             return True
-        prices = pd.read_csv(price_file, index_col=0, parse_dates=True)
+        prices = pd.read_parquet(price_file)
         if len(prices) == 0:
             return True
-        last_timestamp = pd.to_datetime(prices.index, utc=True).max()
+        last_timestamp = pd.to_datetime(prices.index[-1], utc=True)
 
     now = pd.Timestamp.now(tz="UTC")
-    return last_timestamp < (now + pd.Timedelta(minutes=min_foresight_prices))
+    print(now + pd.Timedelta(hours=min_foresight_prices))
+    print(last_timestamp)
+    return last_timestamp < (now + pd.Timedelta(hours=min_foresight_prices))
 
 
 def should_update_eco2mix(
@@ -308,5 +310,6 @@ def should_update_eco2mix(
 
 
 if __name__ == "__main__":
-    print(update_eco2mix_data())
-    print(update_price_data())
+    print(should_update_prices())
+    #print(update_eco2mix_data())
+    #print(update_price_data())
