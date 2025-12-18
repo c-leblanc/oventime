@@ -48,9 +48,7 @@ def cycle_whereat(
     # Extract the time window ending at target_time
     # ------------------------------------------------------------
     idx_target = data.index.get_loc(target_time)
-    print(idx_target)
     start_idx = idx_target - window + 1
-    print(start_idx)
     # If start index is negative, the requested window exceeds available data
     if start_idx < 0:
         raise ValueError(f"Données absentes pour la date demandée ({target_time.tz_convert(tz=TIMEZONE)}) : "
@@ -402,5 +400,8 @@ def price_window(
 
 
 if __name__ == "__main__":
-    print(diagnostic(target_time=pd.Timestamp("2025-12-17 12:30", tz="UTC")))
+    #print(diagnostic(target_time=pd.Timestamp("2025-12-18 09:15", tz="UTC")))
+    print(cycle_whereat(
+        ["STORAGE"], pd.Timestamp("2025-12-18 09:00", tz="UTC"), data=data_processing.init_data(), window=7*24*4, mode="min_to_max"
+    ))
 

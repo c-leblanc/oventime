@@ -1,8 +1,16 @@
 import pandas as pd
+from pathlib import Path
 from oven_time.config import PROJECT_ROOT
 
 def init_data():
-
+    # If no recent changes in raw data, reloads last processed data
+    output_path = Path(PROJECT_ROOT / "data/processed/init_data.parquet")
+    input_path = Path(PROJECT_ROOT / "data/raw/eco2mix.csv")
+    if output_path.exists():
+        out_mtime = output_path.stat().st_mtime
+        if input_path.stat().st_mtime <= out_mtime:
+            return pd.read_parquet(output_path)
+    
     data = pd.read_csv(PROJECT_ROOT / "data/raw/eco2mix.csv", index_col=0, parse_dates=True)
     data = data.drop(["perimetre","nature","date","heure"], axis=1)
     data = data.drop(['ech_physiques','taux_co2', 'ech_comm_angleterre', 'ech_comm_espagne','ech_comm_italie', 'ech_comm_suisse', 'ech_comm_allemagne_belgique'], axis=1)
@@ -21,7 +29,8 @@ def init_data():
 
     processed_dir = PROJECT_ROOT / "data" / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
-    data.to_csv(PROJECT_ROOT / "data/processed/init_data.csv", index=True, float_format="%.0f")
+    #data.to_csv(PROJECT_ROOT / "data/processed/init_data.csv", index=True, float_format="%.0f")
+    data.to_parquet(PROJECT_ROOT / "data/processed/init_data.parquet")
 
     return(data)
 

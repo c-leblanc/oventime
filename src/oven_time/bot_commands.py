@@ -51,14 +51,14 @@ async def start_auto(update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     subscribers = context.application.bot_data.setdefault(SUBSCRIBERS_KEY, set())
     subscribers.add(chat_id)
-    print("Subscriber to automatic messages added.")
+    print(f"Subscriber to automatic messages added: {chat_id}. (Total={len(subscribers)} active subscribers)")
     await update.message.reply_text("✅ ACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
 
 async def stop_auto(update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     subscribers = context.application.bot_data.setdefault(SUBSCRIBERS_KEY, set())
     subscribers.discard(chat_id)
-    print("Subscriber to automatic messages removed.")
+    print("Subscriber to automatic messages removed: {chat_id}. (Total={len(subscribers)} active subscribers)")
     await update.message.reply_text("❌ INACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
 
 

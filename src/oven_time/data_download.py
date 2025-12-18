@@ -80,25 +80,26 @@ def update_eco2mix_data(
         if verbose:
             print(msg)
     
+    log("\n[Eco2Mix Data Update]")
     raw_dir = PROJECT_ROOT / "data" / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Load existing data
-    eco2mix_file = raw_dir / "eco2mix.csv"
+    eco2mix_file = raw_dir / "eco2mix.parquet"
     if eco2mix_file.exists():
-        local = pd.read_csv(eco2mix_file, index_col=0, parse_dates=True)
+        local = pd.read_parquet(eco2mix_file)
         while len(local) > 0 and local.iloc[-1].isna().any():
             local = local.iloc[:-1]
         if len(local) == 0:
             last_timestamp = None
-            log("Existing data - None left after trimming")
+            log("Local data - None left after trimming")
         else:
             last_timestamp = local.index.max()
-            log(f"Existing data - Last timestamp: {last_timestamp}")
+            log(f"Local data - Last timestamp: {last_timestamp}")
     else:
         local = None
         last_timestamp = None
-        log("Existing data - None")
+        log("Local data - None")
 
     # 2. Determine download window
     now = pd.Timestamp.now(tz="UTC").floor("15min")
@@ -118,15 +119,15 @@ def update_eco2mix_data(
         try:
             new_data = eco2mix_df(start=start, end=now)
         except Exception as e:
-            log(f"[update_eco2mix_data] Error fetching eco2mix_df(start={start}, end={now}) : {e!r}")
+            log(f"Error fetching eco2mix_df(start={start}, end={now}) : {e!r}")
             break
 
         if new_data is None or len(new_data) == 0:
-            log(f"[update_eco2mix_data] No data for {start} -> {now}, stop downloading.")
+            log(f"No data for {start} -> {now}, stop downloading.")
             break
 
         if not isinstance(new_data.index, pd.DatetimeIndex):
-            log(f"[update_eco2mix_data] Index error: not interpretable as date-time.")
+            log(f"Index error: not interpretable as date-time.")
             break
 
         log(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
@@ -147,12 +148,13 @@ def update_eco2mix_data(
 
     # 5. Remove data older than retention_days
     limit = now - pd.Timedelta(days=retention_days)
-    combined = combined[combined.index >= limit]
-    log(f"Removed data older than: {limit}")
+    if min(combined.index) < limit:
+        combined = combined[combined.index >= limit]
+        log(f"Removed data older than: {limit}")
 
     # 6. Save final cleaned dataset
-    combined.to_csv(eco2mix_file)
-    log("Update complete.")
+    combined.to_parquet(eco2mix_file)
+    log("Update completed.")
 
     # 7. Return the last timestamp with complete data
     while len(combined) > 0 and combined.iloc[-1].isna().any():
@@ -178,21 +180,21 @@ def update_price_data(
         if verbose:
             print(msg)
 
+    log("\n[Day-Ahead Price Data Update]")
+
     client = EntsoePandasClient(api_key=ENTSOE_API_KEY)
     raw_dir = PROJECT_ROOT / "data" / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
-    price_file = raw_dir / "dayahead.csv"
+    price_file = raw_dir / "DAprices.parquet"
 
     # 1. Load local data as a Series (file may have no header)
     if price_file.exists():
         # header=None ensures we read files without header correctly
-        df_local = pd.read_csv(price_file, header=None, index_col=0, parse_dates=True)
-        # convert to Series (first data column)
-        local = df_local.iloc[:, 0].copy()
+        local = pd.read_parquet(price_file)
         # ensure index is timezone-aware UTC
         local.index = pd.to_datetime(local.index, utc=True)
         last_timestamp = local.index.max()
-        log(f"Last timestamp in prices file: {last_timestamp}")
+        log(f"Local data - Last timestamp: {last_timestamp}")
     else:
         local = None
         last_timestamp = None
@@ -200,27 +202,21 @@ def update_price_data(
 
     # 2. Determine download window
     now = pd.Timestamp.now(tz="UTC").floor("15min")
-
     if last_timestamp is None:
         start = now - pd.Timedelta(days=retention_days)
     else:
         start = last_timestamp + pd.Timedelta(minutes=15)
-
-    # overshoot to include the next day entirely
-    end = now + pd.Timedelta(days=2)
-    log(f"Download window: {start} → {end}")
-
+    end = now + pd.Timedelta(days=2) # overshoot to include the next day entirely
+    log(f"Attempting to download from {start} to {end}")
 
     # 3. Download missing price data
     try:
         new_data = client.query_day_ahead_prices(COUNTRY_CODE, start=start, end=end)
     except Exception as e:
-        log(f"No new price data available. ({e})")
+        log(f"Data already up to date. Nothing to download. {e}")
         return(last_timestamp)
 
-    # normalize new_prices to Series without name and tz-aware index
-    if isinstance(new_data, pd.DataFrame):
-        new_data = new_data.iloc[:, 0]
+    new_data = new_data.to_frame(name="price")
 
     # Some clients return tz-naive timestamps — ensure UTC tz
     if new_data.index.tz is None: new_data.index = new_data.index.tz_localize("UTC")
@@ -228,10 +224,8 @@ def update_price_data(
 
     log(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
 
-    # 4. Concatenate Series safely
-    new_data.name = None # Avoids problem with concatenation    
+    # 4. Concatenate   
     if local is not None:
-        local.name = None
         combined = pd.concat([local, new_data])
     else:
         combined = new_data
@@ -244,16 +238,17 @@ def update_price_data(
 
     # 5. Remove old data but always keep tomorrow
     limit = now - pd.Timedelta(days=retention_days)
-    combined = combined[combined.index >= limit]
-    log(f"Removed data older than: {limit}.")
+    if min(combined.index) < limit:
+        combined = combined[combined.index >= limit]
+        log(f"Removed data older than: {limit}.")
 
     # 6. Save as CSV without header (you wanted no header / no column name)
     # write index + values, no header row
-    combined.to_csv(price_file, header=False)
-    log("Day-ahead price update complete.")
+    combined.to_parquet(price_file)
+    log("Update completed.")
 
     # 7. Return the last timestamp with complete data
-    while len(combined) > 0 and pd.isna(combined.iloc[-1]):
+    while len(combined) > 0 and combined.iloc[-1].isna().any():
             combined = combined.iloc[:-1]
     last_timestamp = combined.index.max()
     return(last_timestamp)
@@ -273,7 +268,7 @@ def should_update_prices(
     :rtype: bool
     """
     if last_timestamp is None:
-        price_file = PROJECT_ROOT / "data" / "raw" / "dayahead.csv"
+        price_file = PROJECT_ROOT / "data" / "raw" / "DAprices.parquet"
         if not price_file.exists():
             return True
         prices = pd.read_csv(price_file, index_col=0, parse_dates=True)
@@ -300,7 +295,7 @@ def should_update_eco2mix(
     :rtype: bool
     """
     if last_timestamp is None:
-        eco2mix_file = PROJECT_ROOT / "data" / "raw" / "eco2mix.csv"
+        eco2mix_file = PROJECT_ROOT / "data" / "raw" / "eco2mix.parquet"
         if not eco2mix_file.exists():
             return True
         eco2mix = pd.read_csv(eco2mix_file, index_col=0, parse_dates=True)
