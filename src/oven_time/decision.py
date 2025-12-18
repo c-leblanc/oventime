@@ -217,7 +217,7 @@ def diagnostic(target_time: pd.Timestamp = None):
     # ------------------------------------------------------------
     # Compute initial score between 0 and 100 (looser system = higher score)
     # ------------------------------------------------------------
-    score = 100*((2/3)*(1 - gasCCG_use_rate) + (1/3)*(1 - storage_phase))
+    score = 100*((2/3)*(1 - gasCCG_use_rate) + (1/3)*(1 - storage_use_rate))
 
     # ------------------------------------------------------------
     # Bonus points when nuclear cycling down (up to 50)

@@ -160,8 +160,6 @@ def update_eco2mix_data(
     last_timestamp = combined.index.max()
     return(last_timestamp)
 
-
-
 def update_price_data(
         retention_days: int = RETENTION_DAYS, 
         verbose: bool = True
