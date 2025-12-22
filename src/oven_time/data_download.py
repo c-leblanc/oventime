@@ -129,12 +129,14 @@ def update_eco2mix_data(
         if not isinstance(new_data.index, pd.DatetimeIndex):
             log(f"Index error: not interpretable as date-time.")
             break
-
-        log(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
+        
         new_data.index = pd.to_datetime(new_data.index, utc=True)
-
+        log(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
+        
         if local is not None:
-            combined = pd.concat([local, new_data])
+            if new_data.isna().values.all():
+                log("Downloaded data is empty.")
+            else: combined = pd.concat([local, new_data])
         else:
             combined = new_data
 
@@ -242,8 +244,7 @@ def update_price_data(
         combined = combined[combined.index >= limit]
         log(f"Removed data older than: {limit}.")
 
-    # 6. Save as CSV without header (you wanted no header / no column name)
-    # write index + values, no header row
+    # 6. Save in a parquet file
     combined.to_parquet(price_file)
     log("Update completed.")
 
@@ -298,7 +299,7 @@ def should_update_eco2mix(
         eco2mix_file = PROJECT_ROOT / "data" / "raw" / "eco2mix.parquet"
         if not eco2mix_file.exists():
             return True
-        eco2mix = pd.read_csv(eco2mix_file, index_col=0, parse_dates=True)
+        eco2mix = pd.read_parquet(eco2mix_file, index_col=0, parse_dates=True)
         if len(eco2mix) == 0:
             return True
         last_timestamp = pd.to_datetime(eco2mix.index, utc=True).max()
