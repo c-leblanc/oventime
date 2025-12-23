@@ -1,5 +1,5 @@
-from oven_time import decision
-from oven_time.config import TIMEZONE
+import oventime.core.decision as decision
+from config import TIMEZONE
 
 import dateparser
 from pandas import Timestamp
@@ -50,8 +50,6 @@ def time_interpreter(time_str, tz=TIMEZONE, freq="15min"):
             f"Format d'heure invalide : {time_str}\nExemples valides : 9, 9am, 21:30, hier 9am, 25/12 14h, ..."
         )
 
-
-
 def concl_from_score(score: float) -> str:
     if score > 100:
         return "🍃🍃🍃 A FOND! Y a de l'électricité à ne savoir qu'en faire."
@@ -64,9 +62,6 @@ def concl_from_score(score: float) -> str:
     if score > 0:
         return "🔴 PAS MAINTENANT, Le système est tendu et les centrales gaz tournent à fond."
     return "🔥🔥🔥 PIRE MOMENT! Le système est si tendu qu'on a démarré les centrales les plus polluantes."
-
-
-
 
 def get_diagnostic(
         at_time: str = None,
@@ -92,7 +87,6 @@ def get_diagnostic(
     )
 
     return(text)
-
 
 def get_price_window(
     duration: str = None,

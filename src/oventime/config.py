@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]  # racine du repo
+PROJECT_ROOT = Path(__file__).resolve().parents[1]  # racine du repo
 
 ############################################
 # Tokens

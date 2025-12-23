@@ -1,5 +1,5 @@
-from oven_time import data_processing
-from oven_time.config import PROJECT_ROOT, WINDOW_RANGE, RETENTION_DAYS, TIMEZONE
+import oventime.input.data_processing as data_processing
+from config import PROJECT_ROOT, WINDOW_RANGE, RETENTION_DAYS, TIMEZONE
 
 import pandas as pd
 import numpy as np

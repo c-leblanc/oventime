@@ -3,7 +3,7 @@ from datetime import timedelta
 import pandas as pd
 from entsoe import EntsoePandasClient
 
-from oven_time.config import PROJECT_ROOT, RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
+from config import PROJECT_ROOT, RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
 
 ECO2MIX_URL = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-national-tr/records"
 
@@ -279,7 +279,6 @@ def should_update_prices(
 
     now = pd.Timestamp.now(tz="UTC")
     return last_timestamp < (now + pd.Timedelta(hours=min_foresight_prices))
-
 
 def should_update_eco2mix(
         last_timestamp: pd.Timestamp = None,

@@ -2,10 +2,10 @@ import logging
 from telegram.ext import ContextTypes
 import asyncio
 
-from oven_time.data_download import should_update_eco2mix, update_eco2mix_data, should_update_prices, update_price_data
-from oven_time.interface import get_diagnostic, get_price_window
-from oven_time.decision import diagnostic
-from oven_time.config import HIGH_SCORE_THRESHOLD, LOW_SCORE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY
+from oventime.input.data_download import should_update_eco2mix, update_eco2mix_data, should_update_prices, update_price_data
+from oventime.interfaces.messaging import get_diagnostic, get_price_window
+from oventime.core.decision import diagnostic
+from config import HIGH_SCORE_THRESHOLD, LOW_SCORE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY
 
 logging.basicConfig(level=logging.INFO)
 
