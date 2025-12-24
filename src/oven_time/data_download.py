@@ -299,7 +299,7 @@ def should_update_eco2mix(
         eco2mix_file = PROJECT_ROOT / "data" / "raw" / "eco2mix.parquet"
         if not eco2mix_file.exists():
             return True
-        eco2mix = pd.read_parquet(eco2mix_file, index_col=0, parse_dates=True)
+        eco2mix = pd.read_parquet(eco2mix_file)
         if len(eco2mix) == 0:
             return True
         last_timestamp = pd.to_datetime(eco2mix.index, utc=True).max()
