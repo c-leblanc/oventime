@@ -5,6 +5,9 @@ from oventime.cache.diagnostic import (
     get_status_now,
     get_fulldiag,
 )
+from oventime.cache.dayahead import (
+    get_nextwindow
+)
 from oventime.utils import to_utc_timestamp
 from oventime.config import TIMEZONE
 
@@ -49,6 +52,18 @@ def diagnostic_at(time: str):
     Diagnostic à un instant donné
     """
     res = get_fulldiag(target_time=time)
+    if res is None:
+        raise HTTPException(status_code=404, detail="No diagnostic available")
+
+    return _format_full_diagnostic(res)
+
+
+@app.get("/next/window")
+def next_window():
+    """
+    Diagnostic complet courant
+    """
+    res = get_nextwindow()
     if res is None:
         raise HTTPException(status_code=404, detail="No diagnostic available")
 

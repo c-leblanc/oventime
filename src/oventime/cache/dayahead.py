@@ -5,7 +5,7 @@ import time
 from oventime.utils import to_utc_timestamp, to_epoch
 from oventime.config import TIMEZONE
 
-DB_PATH = Path(__file__).parent / "cache_diag.sqlite"
+DB_PATH = Path(__file__).parent / "cache_dayahead.sqlite"
 
 
 def get_connection():

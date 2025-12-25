@@ -63,7 +63,7 @@ async def orchestrator_loop(freq=FREQ_UPDATE):
         # --- B. cache dayahead ---
         try:
             upd_cache_dayahead()
-            print(f"[{datetime.now()}] Cache diagnostic mis à jour.")
+            print(f"[{datetime.now()}] Cache dayahead mis à jour.")
         except Exception as e:
             print(f"[{datetime.now()}] Erreur mise à jour cache dayahead: {e!r}")
 
