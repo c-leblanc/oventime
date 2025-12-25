@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-from config import PROJECT_ROOT
+from oventime.config import PROJECT_ROOT
 
 def init_data():
     # If no recent changes in raw data, reloads last processed data

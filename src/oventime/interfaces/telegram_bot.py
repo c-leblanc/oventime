@@ -4,8 +4,8 @@ import asyncio
 
 from oventime.input.data_download import should_update_eco2mix, update_eco2mix_data, should_update_prices, update_price_data
 from oventime.interfaces.messaging import get_diagnostic, get_price_window
-from oventime.core.decision import diagnostic
-from config import HIGH_SCORE_THRESHOLD, LOW_SCORE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY
+from oventime.core.diagnostic import diagnostic
+from oventime.config import HIGH_SCORE_THRESHOLD, LOW_SCORE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY
 
 logging.basicConfig(level=logging.INFO)
 
@@ -93,35 +93,6 @@ async def check_score_job(application):
             await application.bot.send_message(chat_id=chat_id, text=text)
 
 
-async def background_job(application, freq=5):
-    """
-    Coroutine qui tourne en boucle infinie pour :
-    1. mettre à jour eco2mix
-    2. mettre à jour les prix day-ahead si on est après midi et qu'ils manquent
-    3. lancer check_score_job après chaque update
-    """
-    last_timestamp_eco2mix = None
-    last_timestamp_prices = None
-    while True:
-        if should_update_eco2mix(last_timestamp_eco2mix):
-            try:
-                # --- 1. Update eco2mix ---
-                last_timestamp_eco2mix = update_eco2mix_data(verbose=True)
-
-                # --- 2. Recompute score and triggers alerts ---
-                await check_score_job(application)
-
-            except Exception as e:
-                print(f"[background_job] Erreur dans la MaJ des données de production : {e!r}")
-
-        # --- 3. Update prices if needed ---
-        if should_update_prices(last_timestamp_prices):
-            try:
-                update_price_data(verbose=True)
-            except Exception as e:
-                print(f"[background_job] Erreur dans la MaJ des données de prix: {e!r}")
-
-        await asyncio.sleep(freq * 60)
 
 
         

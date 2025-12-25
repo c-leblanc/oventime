@@ -3,7 +3,7 @@ from datetime import timedelta
 import pandas as pd
 from entsoe import EntsoePandasClient
 
-from config import PROJECT_ROOT, RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
+from oventime.config import PROJECT_ROOT, RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
 
 ECO2MIX_URL = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-national-tr/records"
 
@@ -191,7 +191,6 @@ def update_price_data(
 
     # 1. Load local data as a Series (file may have no header)
     if price_file.exists():
-        # header=None ensures we read files without header correctly
         local = pd.read_parquet(price_file)
         # ensure index is timezone-aware UTC
         local.index = pd.to_datetime(local.index, utc=True)
@@ -254,6 +253,15 @@ def update_price_data(
     last_timestamp = combined.index.max()
     return(last_timestamp)
 
+def last_ts_prices():
+    price_file = PROJECT_ROOT / "data" / "raw" / "DAprices.parquet"
+    if not price_file.exists():
+        return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
+    prices = pd.read_parquet(price_file)
+    if len(prices) == 0:
+        return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
+    return pd.to_datetime(prices.index[-1], utc=True)
+
 def should_update_prices(
         last_timestamp: pd.Timestamp = None,
         min_foresight_prices: int = MIN_FORESIGHT_PRICES
@@ -269,16 +277,24 @@ def should_update_prices(
     :rtype: bool
     """
     if last_timestamp is None:
-        price_file = PROJECT_ROOT / "data" / "raw" / "DAprices.parquet"
-        if not price_file.exists():
-            return True
-        prices = pd.read_parquet(price_file)
-        if len(prices) == 0:
-            return True
-        last_timestamp = pd.to_datetime(prices.index[-1], utc=True)
+        last_timestamp = last_ts_prices()
 
     now = pd.Timestamp.now(tz="UTC")
     return last_timestamp < (now + pd.Timedelta(hours=min_foresight_prices))
+
+def last_ts_eco2mix():
+    eco2mix_file = PROJECT_ROOT / "data" / "raw" / "eco2mix.parquet"
+    # Check if the eco2mix file exists
+    if not eco2mix_file.exists():
+        return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
+    # Load and remove final rows with missing data
+    eco2mix = pd.read_parquet(eco2mix_file)
+    while len(eco2mix) > 0 and eco2mix.iloc[-1].isna().any():
+            eco2mix = eco2mix.iloc[:-1]
+    # Return last timestamp (or default if no rows left) 
+    if len(eco2mix) == 0:
+        return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
+    return pd.to_datetime(eco2mix.index, utc=True).max()
 
 def should_update_eco2mix(
         last_timestamp: pd.Timestamp = None,
@@ -295,13 +311,7 @@ def should_update_eco2mix(
     :rtype: bool
     """
     if last_timestamp is None:
-        eco2mix_file = PROJECT_ROOT / "data" / "raw" / "eco2mix.parquet"
-        if not eco2mix_file.exists():
-            return True
-        eco2mix = pd.read_parquet(eco2mix_file, index_col=0, parse_dates=True)
-        if len(eco2mix) == 0:
-            return True
-        last_timestamp = pd.to_datetime(eco2mix.index, utc=True).max()
+        last_timestamp = last_ts_eco2mix()
     now = pd.Timestamp.now(tz="UTC")
     return last_timestamp < (now - pd.Timedelta(minutes=freq_update_eco2mix))
 

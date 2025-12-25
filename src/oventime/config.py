@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]  # racine du repo
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # racine du repo
 
 ############################################
 # Tokens
@@ -37,6 +37,7 @@ TIMEZONE = "Europe/Paris"
 
 ## Data
 RETENTION_DAYS = 22 # Data to keep in memory
+FREQ_UPDATE = 5 # Frequency at which the updating background job runs
 FREQ_UPDATE_ECO2MIX = 20 # Eco2Mix Data : Time elapsed since last data that triggers an update attempt (in minutes).
 MIN_FORESIGHT_PRICES = 12 # Price Data from ENTSO-E : Update attempt triggered if last data less than MIN_FORESIGHT_PRICES in the future
 
