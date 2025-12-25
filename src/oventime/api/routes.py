@@ -67,7 +67,7 @@ def next_window():
     if res is None:
         raise HTTPException(status_code=404, detail="No diagnostic available")
 
-    return _format_full_diagnostic(res)
+    return res
 
 
 # ----------------------------
