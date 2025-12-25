@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-from oventime.config import PROJECT_ROOT, WINDOW_RANGE, WINDOW_METHOD
+from oventime.config import PROJECT_ROOT, WINDOW_RANGE, WINDOW_METHOD, OTSU_SEVERITY
 
 
-def optimal_threshold_otsu(prices, severity=1.0):
+def optimal_threshold_otsu(prices, severity=OTSU_SEVERITY):
     """
     Compute an optimal low-price threshold using an Otsu-like criterion.
 
@@ -65,7 +65,7 @@ def optimal_threshold_otsu(prices, severity=1.0):
 def price_window(
     max_window=pd.Timedelta(hours=WINDOW_RANGE),
     method: str = WINDOW_METHOD,
-    severity: float = 1.0,
+    severity: float = OTSU_SEVERITY,
     relative_low: float = 0.30,
     absolute_low: float = 10
 ):
@@ -146,7 +146,23 @@ def price_window(
     end_time = best_group.index[-1] + pd.Timedelta(minutes=15)
     #avg_price = best_group.mean()
 
-    return start_time, end_time, eff_window
+    return {
+        "time": now,
+        "start_time": start_time,
+        "end_time": end_time,
+        "eff_window": eff_window,
+        "method": method
+    }
+
+def output():# pour ajouter d'autres outputs plus tard, et tout renvoyer au cache d'un coup
+    pwind = price_window()
+    return {
+        "time": pwind["time"],
+        "nextwind_start": pwind["start_time"],
+        "nextwind_end": pwind["end_time"],
+        "nextwind_method": pwind["method"]
+    }
+
 
 
 if __name__ == "__main__":

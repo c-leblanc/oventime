@@ -106,7 +106,7 @@ def status_from_score(score: float):
     else: status="fire"
     return status
 
-def diagnostic(target_time: pd.Timestamp = None):
+def output(target_time: pd.Timestamp = None):
     """
     Provide a global qualitative + quantitative diagnostic of power system tightness,
     based on the current position of:
@@ -205,6 +205,6 @@ def diagnostic(target_time: pd.Timestamp = None):
 
 
 if __name__ == "__main__":
-    print(diagnostic())
+    print(output())
     #print(cycle_whereat(["STORAGE"], pd.Timestamp("2025-12-18 09:00", tz="UTC"), data=data_processing.init_data(), window=7*24*4, mode="min_to_max"))
 

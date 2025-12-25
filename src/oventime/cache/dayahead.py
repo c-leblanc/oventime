@@ -2,7 +2,7 @@ import sqlite3
 from pathlib import Path
 import time
 
-from oventime.utils import to_utc_timestamp
+from oventime.utils import to_utc_timestamp, to_epoch
 from oventime.config import TIMEZONE
 
 DB_PATH = Path(__file__).parent / "cache_diag.sqlite"
@@ -37,20 +37,20 @@ def init_db():
 
 
 
-def save(d, source_version="v1"):
+def save(output, source_version="v1"):
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT OR REPLACE INTO diagnostic_cache (
+        INSERT OR REPLACE INTO dayahead_cache (
             ts, nextwind_start, nextwind_end, nextwind_method,
             source_version, created_at
         ) VALUES (?, ?, ?, ?, ?, ?)
     """, (
-        int(d["time"].timestamp()),
-        d["nextwind_start"],
-        d["nextwind_end"],
-        d["nextwind_method"],
+        to_epoch(output["time"]),
+        to_epoch(output["nextwind_start"]),
+        to_epoch(output["nextwind_end"]),
+        output["nextwind_method"],
         source_version,
         int(time.time())
     ))

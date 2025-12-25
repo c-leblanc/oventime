@@ -9,7 +9,7 @@ from oventime.input.data_download import (
     should_update_prices,
     last_ts_eco2mix, last_ts_prices
 )
-from oventime.jobs.updates import upd_cache_diag
+from oventime.jobs.updates import upd_cache_diag, upd_cache_dayahead
 from oventime.config import FREQ_UPDATE
 
 
@@ -26,7 +26,7 @@ async def orchestrator_loop(freq=FREQ_UPDATE):
     while True:
         print(f"[{datetime.now()}] Début de l'orchestrateur")
 
-        # Live data and diagnostic
+        # 1. Live data and diagnostic
         # --- A. eco2mix data ---
         if should_update_eco2mix(last_timestamp_eco2mix):
             try:
@@ -51,7 +51,8 @@ async def orchestrator_loop(freq=FREQ_UPDATE):
             print(f"[{datetime.now()}] Erreur mise à jour cache diagnostic: {e!r}")
 
 
-        # --- 2. Prices ---
+        # 2. Day-Ahead
+        # --- A. Day-Ahead Prices data --
         if should_update_prices(last_timestamp_prices):
             try:
                 last_timestamp_prices = update_price_data(verbose=True)
@@ -59,6 +60,12 @@ async def orchestrator_loop(freq=FREQ_UPDATE):
             except Exception as e:
                 print(f"[{datetime.now()}] Erreur mise à jour prices: {e!r}")
         else: print(f"[{datetime.now()}] DA Prices: pas de mise à jour nécessaire.")
+        # --- B. cache dayahead ---
+        try:
+            upd_cache_dayahead()
+            print(f"[{datetime.now()}] Cache diagnostic mis à jour.")
+        except Exception as e:
+            print(f"[{datetime.now()}] Erreur mise à jour cache dayahead: {e!r}")
 
 
         # --- Attente avant prochaine itération ---

@@ -1,17 +1,23 @@
 from datetime import timedelta
 import pandas as pd
 
-from oventime.core.diagnostic import diagnostic
-from oventime.cache.diagnostic import init_db, save_diagnostic
+import oventime.core.diagnostic
+import oventime.cache.diagnostic
+import oventime.core.dayahead
+import oventime.cache.dayahead
 
 
 def upd_cache_diag(times, source_version="v1"):
-    init_db()
+    oventime.cache.diagnostic.init_db()
     for ts in times:
-        d = diagnostic(target_time=ts)
-        save_diagnostic(d, source_version=source_version)
+        d = oventime.core.diagnostic.output(target_time=ts)
+        oventime.cache.diagnostic.save(d, source_version=source_version)
 
-def upd_cache_dayahead()
+def upd_cache_dayahead(source_version="v1"):
+    oventime.cache.dayahead.init_db()
+    d = oventime.core.dayahead.output()
+    oventime.cache.dayahead.save(d, source_version=source_version)
+
 
 if __name__ == "__main__":
     # exemple : recalcul des 48 dernières heures

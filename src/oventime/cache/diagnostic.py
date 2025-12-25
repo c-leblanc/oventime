@@ -42,7 +42,7 @@ def init_db():
 
 
 
-def save_diagnostic(d, source_version="v1"):
+def save(d, source_version="v1"):
     conn = get_connection()
     cur = conn.cursor()
 
