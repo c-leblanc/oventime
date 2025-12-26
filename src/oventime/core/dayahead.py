@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from oventime.config import PROJECT_ROOT, WINDOW_RANGE, WINDOW_METHOD, OTSU_SEVERITY
+from oventime.utils import to_utc_timestamp
 
 
 def optimal_threshold_otsu(prices, severity=OTSU_SEVERITY):
@@ -63,7 +64,8 @@ def optimal_threshold_otsu(prices, severity=OTSU_SEVERITY):
     return best_tau
 
 def price_window(
-    max_window=pd.Timedelta(hours=WINDOW_RANGE),
+    now: pd.Timestamp = None,
+    window_range: int = WINDOW_RANGE,
     method: str = WINDOW_METHOD,
     severity: float = OTSU_SEVERITY,
     relative_low: float = 0.30,
@@ -100,7 +102,9 @@ def price_window(
     # ------------------------------------------------------------------
     prices = pd.read_parquet(PROJECT_ROOT / "data/raw/DAprices.parquet")["price"]
 
-    now = pd.Timestamp.now(tz="UTC").floor("15min")
+    if now is None: now = pd.Timestamp.now()
+    now = to_utc_timestamp(now).floor("15min")
+    max_window=pd.Timedelta(hours=window_range)
     limit = now + max_window
 
     prices = prices.loc[(prices.index >= now) & (prices.index <= limit)]
@@ -154,8 +158,10 @@ def price_window(
         "method": method
     }
 
-def output():# pour ajouter d'autres outputs plus tard, et tout renvoyer au cache d'un coup
-    pwind = price_window()
+def output(# pour ajouter d'autres outputs plus tard, et tout renvoyer au cache d'un coup
+        now: pd.Timestamp = None
+        ):
+    pwind = price_window(now=now)
     return {
         "time": pwind["time"],
         "nextwind_start": pwind["start_time"],

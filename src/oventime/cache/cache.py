@@ -5,7 +5,7 @@ import time
 from oventime.utils import to_epoch, to_utc_timestamp
 from oventime.config import TIMEZONE
 
-DB_PATH = Path(__file__).parent / "cache_dayahead.sqlite"
+DB_PATH = Path(__file__).parent / "cache.sqlite"
 
 
 def get_connection():
@@ -17,7 +17,7 @@ def init_db():
     cur = conn.cursor()
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS diagnostic_cache (
+    CREATE TABLE IF NOT EXISTS cache (
         ts INTEGER PRIMARY KEY,    
         status TEXT NOT NULL,
         score REAL NOT NULL,
@@ -27,14 +27,17 @@ def init_db():
         nuclear_use_rate REAL,
         nuclear_bonus REAL,
         ocgt_malus REAL,
+        nextwind_start INTEGER,
+        nextwind_end INTEGER,
+        nextwind_method TEXT,        
         source_version TEXT,
         created_at INTEGER NOT NULL
     );
     """)
 
     cur.execute("""
-    CREATE INDEX IF NOT EXISTS idx_diagnostic_ts
-    ON diagnostic_cache (ts)
+    CREATE INDEX IF NOT EXISTS idx_ts
+    ON cache (ts)
     """)
 
     conn.commit()
@@ -42,27 +45,31 @@ def init_db():
 
 
 
-def save(d, source_version="v1"):
+def save(output, source_version="v1"):
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT OR REPLACE INTO diagnostic_cache (
+        INSERT OR REPLACE INTO cache (
             ts, status, score,
             gasCCG_use_rate, storage_phase, storage_use_rate,
-            nuclear_use_rate, nuclear_bonus, ocgt_malus,
+            nuclear_use_rate, nuclear_bonus, ocgt_malus, 
+            nextwind_start, nextwind_end, nextwind_method,   
             source_version, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        int(d["time"].timestamp()),
-        d["status"],
-        d["score"],
-        d["gasCCG_use_rate"],
-        d["storage_phase"],
-        d["storage_use_rate"],
-        d["nuclear_use_rate"],
-        d["nuclear_bonus"],
-        d["ocgt_malus"],
+        to_epoch(output["time"]),
+        output["status"],
+        output["score"],
+        output["gasCCG_use_rate"],
+        output["storage_phase"],
+        output["storage_use_rate"],
+        output["nuclear_use_rate"],
+        output["nuclear_bonus"],
+        output["ocgt_malus"],
+        to_epoch(output["nextwind_start"]),
+        to_epoch(output["nextwind_end"]),
+        output["nextwind_method"],
         source_version,
         int(time.time())
     ))
@@ -84,7 +91,7 @@ def get_fulldiag(target_time=None, tz_output=TIMEZONE):
             gasCCG_use_rate, storage_phase, storage_use_rate,
             nuclear_use_rate, nuclear_bonus, ocgt_malus,
             source_version, created_at
-        FROM diagnostic_cache
+        FROM cache
         WHERE ts <= ?
         ORDER BY ts DESC
         LIMIT 1
@@ -100,26 +107,29 @@ def get_fulldiag(target_time=None, tz_output=TIMEZONE):
         "ts": to_utc_timestamp(row[0]).tz_convert(tz_output),
         "status": row[1],
         "score": row[2],
-        "gasCCG_use_rate": row[3],
-        "storage_phase": row[4],
-        "storage_use_rate": row[5],
-        "nuclear_use_rate": row[6],
-        "nuclear_bonus": row[7],
-        "ocgt_malus": row[8],
+        "details":{
+            "gasCCG_use_rate": row[3],
+            "storage_phase": row[4],
+            "storage_use_rate": row[5],
+            "nuclear_use_rate": row[6],
+            "nuclear_bonus": row[7],
+            "ocgt_malus": row[8]
+            },
         "source_version": row[9],
         "created_at": row[10],
     }
 
 
-def get_status_now():
-    ts = int(time.time())
+def get_status(target_time=None, tz_output=TIMEZONE):
+    if target_time is None: ts = to_epoch(time.time())
+    else: ts = to_epoch(target_time)
 
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("""
         SELECT ts, status
-        FROM diagnostic_cache
+        FROM cache
         WHERE ts <= ?
         ORDER BY ts DESC
         LIMIT 1
@@ -132,9 +142,34 @@ def get_status_now():
         return None
 
     return {
-        "ts": row[0],
+        "ts": to_utc_timestamp(row[0]).tz_convert(tz_output),
         "status": row[1]
     }
 
 
+def get_nextwindow(target_time=None, tz_output=TIMEZONE):
+    if target_time is None: ts = to_epoch(time.time())
+    else: ts = to_epoch(target_time)
 
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT ts, nextwind_start, nextwind_end
+        FROM cache
+        WHERE ts <= ?
+        ORDER BY ts DESC
+        LIMIT 1
+    """, (ts,))
+
+    row = cur.fetchone()
+    conn.close()
+
+    if row is None:
+        return None
+
+    return {
+        "ts": to_utc_timestamp(row[0]).tz_convert(tz_output),
+        "nextwind_start": to_utc_timestamp(row[1]).tz_convert(tz_output),
+        "nextwind_end": to_utc_timestamp(row[2]).tz_convert(tz_output)
+    }

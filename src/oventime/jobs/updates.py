@@ -2,21 +2,26 @@ from datetime import timedelta
 import pandas as pd
 
 import oventime.core.diagnostic
-import oventime.cache.diagnostic
 import oventime.core.dayahead
-import oventime.cache.dayahead
+import oventime.cache.cache
 
 
-def upd_cache_diag(times, source_version="v1"):
-    oventime.cache.diagnostic.init_db()
+def update_cache(times, source_version="v1"):
+    oventime.cache.cache.init_db()
     for ts in times:
-        d = oventime.core.diagnostic.output(target_time=ts)
-        oventime.cache.diagnostic.save(d, source_version=source_version)
+        diag = oventime.core.diagnostic.output(target_time=ts)
+        #dayahead = oventime.core.dayahead.output()
+        oventime.cache.cache.save(diag, source_version=source_version)
 
-def upd_cache_dayahead(source_version="v1"):
-    oventime.cache.dayahead.init_db()
-    d = oventime.core.dayahead.output()
-    oventime.cache.dayahead.save(d, source_version=source_version)
+def update_cache_curr(source_version="v1"):
+    oventime.cache.cache.init_db()
+    diag = oventime.core.diagnostic.output()
+    dayahead = oventime.core.dayahead.output(now=diag["time"])
+    if diag["time"]==dayahead["time"]:
+        output = (diag | dayahead)
+    else: 
+        raise ValueError("Inconsistent timestamps.")
+    oventime.cache.cache.save(output=output, source_version=source_version)
 
 
 if __name__ == "__main__":
@@ -28,4 +33,4 @@ if __name__ == "__main__":
         freq="15min"
     )
 
-    upd_cache_diag(times)
+    update_cache_curr()
