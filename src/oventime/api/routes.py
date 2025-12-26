@@ -16,34 +16,29 @@ app = FastAPI(
 )
 
 
-@app.get("/status/now")
-def status_now():
+@app.get("/status")
+def status(time: str = None):
     """
-    Statut courant (léger, pour bot / widget)
+    API Request -- Status only for latest available timestamp or other timestamp if specified.
+    
+    :param time: Time at which the status is requested (latest available if None).
+    :type time: str
     """
-    res = get_status()
+    res = get_status(target_time=time)
     if res is None:
-        raise HTTPException(status_code=404, detail="No diagnostic available")
+        raise HTTPException(status_code=404, detail="No status available")
 
     return res
 
 
-@app.get("/diagnostic/now")
-def diagnostic_now():
-    """
-    Diagnostic complet courant
-    """
-    res = get_fulldiag()
-    if res is None:
-        raise HTTPException(status_code=404, detail="No diagnostic available")
 
-    return res
-
-
-@app.get("/diagnostic/at")
-def diagnostic_at(time: str):
+@app.get("/diagnostic")
+def diagnostic(time: str = None):
     """
-    Diagnostic à un instant donné
+    API Request -- Full diagnostic for latest available timestamp or other timestamp if specified.
+    
+    :param time: Time at which the diagnostic is requested (latest available if None).
+    :type time: str
     """
     res = get_fulldiag(target_time=time)
     if res is None:
@@ -53,13 +48,16 @@ def diagnostic_at(time: str):
 
 
 @app.get("/next/window")
-def next_window():
+def next_window(time: str = None):
     """
-    Diagnostic complet courant
+    API Request -- Next window with low prices (anticipated at <time>).
+    
+    :param time: Time (latest available if None).
+    :type time: str
     """
-    res = get_nextwindow()
+    res = get_nextwindow(time)
     if res is None:
-        raise HTTPException(status_code=404, detail="No diagnostic available")
+        raise HTTPException(status_code=404, detail="No estimates available for the next window")
 
     return res
 

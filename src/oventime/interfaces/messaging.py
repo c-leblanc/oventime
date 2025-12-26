@@ -1,23 +1,10 @@
 import requests
+import pandas as pd
 
 from oventime.utils import time_interpreter, to_utc_timestamp, to_epoch
-from oventime.config import TIMEZONE
+from oventime.config import TIMEZONE, API_BASE_URL
 
 
-API_BASE_URL = "http://127.0.0.1:8000"
-
-
-def get_fulldiag(at_time = None):
-    if at_time is None:
-        r = requests.get(f"{API_BASE_URL}/diagnostic/now")
-    else:
-        at_time = to_epoch(at_time)
-        r = requests.get(f"{API_BASE_URL}/diagnostic/at",
-            params={"time": at_time},
-            timeout=2,
-        )
-    r.raise_for_status()
-    return r.json()
 
 def concl_from_score(score: float) -> str:
     if score > 100:
@@ -38,9 +25,17 @@ def msg_diagnostic(
         ):
     
     target_time = time_interpreter(at_time)
-    diag = get_fulldiag(target_time)
-    diag['time'] = to_utc_timestamp(diag['time']).tz_convert(tz_output)
+    r = requests.get(
+        f"{API_BASE_URL}/diagnostic",
+        params={"time": target_time},
+        timeout=2
+        )
+    r.raise_for_status()
     
+    diag = r.json()
+    
+    diag['ts'] = to_utc_timestamp(diag['ts']).tz_convert(tz_output)
+
     # ------------------------------------------------------------
     # Qualitative interpretation for real-time feedback
     # ------------------------------------------------------------
@@ -48,7 +43,7 @@ def msg_diagnostic(
     stock_ou_destock = "on déstocke"
     if diag['details']["storage_use_rate"]<0: stock_ou_destock = "on stocke"
     text = (
-        f"📊 *Etat du système* à {diag['time'].strftime('%H:%M')} ({diag['time'].strftime('%d/%m')})\n\n"
+        f"📊 *Etat du système* à {diag['ts'].strftime('%H:%M')} ({diag['ts'].strftime('%d/%m')})\n\n"
         f"🔥 Gaz mobilisé à {diag['details']['gasCCG_use_rate']*100:.0f}%\n"
         f"💧 Hydro/Stockage à {diag['details']['storage_use_rate']*100:.0f}% (**"+stock_ou_destock+"**)\n"
         f"⚛️ Nucléaire à {diag['details']['nuclear_use_rate']*100:.1f}% de sa dispo\n"
@@ -59,34 +54,49 @@ def msg_diagnostic(
     return(text)
 
 def msg_price_window(
-    duration: str = None,
-    method: str = "otsu",
-    severity: float = 1.0,
-    tz_output: str = TIMEZONE
-) -> str:
+        tz_output: str = TIMEZONE
+        ) -> str:
     """
     Renvoie un message texte décrivant la prochaine bonne fenêtre de prix bas.
     """
-    if duration is None:
-        start_utc, end_utc, eff_window = diagnostic.price_window(method=method,severity=severity)
-
-        start_local = start_utc.tz_convert(tz_output)
-        end_local = end_utc.tz_convert(tz_output)
-
-        start_str = start_local.strftime("%H:%M")
-        end_str = end_local.strftime("%H:%M")
-
-        text = (
-            f"⚡🌱 Bonne fenêtre dans les {eff_window}h à venir : "
-            f"🕒 *{start_str}* à *{end_str}* 🕒\n"
-            f"👉 Bon moment pour lancer les gros consommateurs d'électricité"
+    r = requests.get(
+        f"{API_BASE_URL}/next/window",
+        timeout=2
         )
+    r.raise_for_status()
+    
+    pwind = r.json()
+
+    start = to_utc_timestamp(pwind['nextwind_start']).tz_convert(tz_output)
+    end = to_utc_timestamp(pwind['nextwind_end']).tz_convert(tz_output)
+
+    start_str = start.strftime("%H:%M")
+    end_str = end.strftime("%H:%M")
+
+    now = pd.Timestamp.now(tz_output).normalize()
+    start_day = start.normalize()
+
+    if start_day == now:
+        # aujourd'hui ou cette nuit ?
+        if start.hour >= 22 or start.hour < 6:
+            when = "cette nuit"
+        else:
+            when = "aujourd’hui"
+    elif start_day == now + pd.Timedelta(days=1):
+        when = "demain"
     else:
-        start_utc, end_utc, eff_window = oventime.core.diagnostic.price_window(duration=duration,severity=severity)
+        # fallback explicite (évite les surprises)
+        when = start.strftime("le %d/%m")
+
+    text = (
+        f"⚡🌱 Bonne fenêtre : "
+        f"🕒 *{start_str}* à *{end_str}* 🕒 ({when})\n"
+        f"👉 Bon moment pour lancer les gros consommateurs d'électricité"
+    )
 
     return text
 
 if __name__ == "__main__":
-    print(msg_diagnostic())
-    #print(msg_price_window(severity=2))
+    print(msg_diagnostic("17:45"))
+    #print(msg_price_window())
 

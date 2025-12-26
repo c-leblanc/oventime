@@ -74,12 +74,16 @@ def to_epoch(target_time: Union[int, float, str, pd.Timestamp]) -> int:
 
     # 2. String → pandas
     if isinstance(target_time, str):
-        target_time = time_interpreter(target_time)
+        # 1️⃣ Parser robuste (ISO + quasi tout le reste)
+        try:
+            target_time = pd.to_datetime(target_time, utc=True)
+        except Exception:
+            # 2️⃣ Langage naturel
+            target_time = time_interpreter(target_time)
 
-    # 3. pandas Timestamp
+    # 3. pandas Timestamp -> epoch
     if isinstance(target_time, pd.Timestamp):
         if target_time.tzinfo is None:
-            # ⚠️ choix explicite : on suppose UTC si naïf
             target_time = target_time.tz_localize("UTC")
         else:
             target_time = target_time.tz_convert("UTC")
@@ -95,8 +99,7 @@ def to_utc_timestamp(
     target_time: Union[int, float, str, pd.Timestamp]
 ) -> pd.Timestamp:
     """
-    Convert various time inputs to a timezone-aware pandas Timestamp
-    in local project timezone.
+    Convert various time inputs to a UTC Timestamp.
 
     Accepted inputs:
     - int / float        → epoch seconds (UTC)
@@ -109,29 +112,27 @@ def to_utc_timestamp(
         Timezone-aware timestamp in local timezone
     """
 
-    # 1. Epoch → UTC → local
+    # 1. Epoch → UTC
     if isinstance(target_time, (int, float)):
         return pd.to_datetime(target_time, unit="s", utc=True)
 
     # 2. pandas Timestamp
     if isinstance(target_time, pd.Timestamp):
         if target_time.tzinfo is None:
-            # Convention: naïf = UTC
             return target_time.tz_localize("UTC")
         else:
             return target_time
 
     # 3. String
+    # String
     if isinstance(target_time, str):
-        # Cas ISO strict avec timezone
-        if re.match(ISO_REGEX, target_time):
-            ts = pd.to_datetime(target_time,utc=True)
-            return ts
-        else:
-            # Langage naturel → fallback vers time_interpreter
-            ts = time_interpreter(target_time)
-            return ts
-        
+        # 1️⃣ Parser robuste (ISO + quasi tout le reste)
+        try:
+            return pd.to_datetime(target_time, utc=True)
+        except Exception:
+            # 2️⃣ Langage naturel
+            return time_interpreter(target_time)
+
     raise TypeError(
         "target_time must be int, float, str or pd.Timestamp "
         f"(got {type(target_time)})"

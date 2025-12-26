@@ -1,18 +1,19 @@
 import logging
 from telegram.ext import ContextTypes
+import httpx
 import asyncio
 
-from oventime.input.data_download import should_update_eco2mix, update_eco2mix_data, should_update_prices, update_price_data
-from oventime.interfaces.messaging import get_diagnostic, get_price_window
-from oventime.core.diagnostic import diagnostic
-from oventime.config import HIGH_SCORE_THRESHOLD, LOW_SCORE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY
+from oventime.interfaces.messaging import msg_diagnostic, msg_price_window
+from oventime.config import (
+    LEAF_THRESHOLD, FIRE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY,
+    API_BASE_URL)
 
 logging.basicConfig(level=logging.INFO)
 
 
 async def now(update, context):
     """Répond avec le diagnostic actuel."""
-    msg = get_diagnostic()
+    msg = msg_diagnostic()
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def at(update, context):
@@ -27,7 +28,7 @@ async def at(update, context):
     time_str = " ".join(context.args)
 
     try:
-        msg = get_diagnostic(at_time=time_str)
+        msg = msg_diagnostic(at_time=time_str)
     except ValueError as e:
         await update.message.reply_text(str(e), parse_mode="Markdown")
         return
@@ -38,7 +39,7 @@ async def at(update, context):
 
 async def window(update, context):
     """Répond avec la meilleure fenêtre à venir."""
-    msg = get_price_window(method=WINDOW_METHOD,severity=OTSU_SEVERITY)
+    msg = msg_price_window(method=WINDOW_METHOD,severity=OTSU_SEVERITY)
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 
@@ -62,31 +63,57 @@ async def stop_auto(update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ INACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
 
 
-
 async def check_score_job(application):
-    state_high = application.bot_data.setdefault("last_alert_high", False)
-    print(f"Last alert high ? {state_high}")
-    state_low = application.bot_data.setdefault("last_alert_low", False)
-    print(f"Last alert low ? {state_low}")
+    print("[check_score_job called]")
+    last_seen_ts = application.bot_data.get("last_seen_ts")
 
-    diag = diagnostic()
+    async with httpx.AsyncClient(timeout=2) as client:
+        r = await client.get(f"{API_BASE_URL}/diagnostic")
+        r.raise_for_status()
+        diag = r.json()
+
+    if diag is None:
+        return
+
+    ts = diag["ts"]
+
+    # 👉 Rien de nouveau
+    if ts == last_seen_ts:
+        return
+
+    application.bot_data["last_seen_ts"] = ts
+
     score = diag["score"]
     subscribers = application.bot_data.get(SUBSCRIBERS_KEY, set())
 
-    text=None
-    if score <= HIGH_SCORE_THRESHOLD and state_high:
+    state_high = application.bot_data.setdefault("last_alert_high", False)
+    state_low = application.bot_data.setdefault("last_alert_low", False)
+
+    text = None
+
+    if score <= LEAF_THRESHOLD and state_high:
         text = "❌ Fin de la période d'abondance ⚡🍃"
         application.bot_data["last_alert_high"] = False
-    if score >= LOW_SCORE_THRESHOLD and state_low:
+
+    elif score >= FIRE_THRESHOLD and state_low:
         text = "✅ Fin de la période de forte tension 🔥🏭"
         application.bot_data["last_alert_low"] = False
-    if score > HIGH_SCORE_THRESHOLD and not state_high:
-        text = f"🍃⚡ ABONDANCE ⚡🍃\nIl y a un surplus d'électricité décarbonée sur le réseau !\n(Score : {score:.0f}, /m for more info)"
-        application.bot_data["last_alert_high"] = True
-    if score < LOW_SCORE_THRESHOLD and not state_low:
-        text = f"🔥🏭 FORTE TENSION 🔥🏭\nL'électricité se fait rare et on a démarré les centrales les plus polluantes !\n(Score : {score:.0f}, /m for more info)"
-        application.bot_data["last_alert_low"] = True
 
+    elif score > LEAF_THRESHOLD and not state_high:
+        text = (
+            "🍃⚡ ABONDANCE ⚡🍃\n"
+            "Il y a un surplus d'électricité décarbonée sur le réseau !\n"
+            f"(Score : {score:.0f}, /m pour plus d'infos)"
+        )
+        application.bot_data["last_alert_high"] = True
+
+    elif score < FIRE_THRESHOLD and not state_low:
+        text = (
+            "🔥🏭 FORTE TENSION 🔥🏭\n"
+            "L'électricité se fait rare et on a démarré les centrales les plus polluantes !\n"
+            f"(Score : {score:.0f}, /m pour plus d'infos)"
+        )
+        application.bot_data["last_alert_low"] = True
 
     if text is not None:
         for chat_id in subscribers:

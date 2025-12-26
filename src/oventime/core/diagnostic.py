@@ -2,7 +2,8 @@ import pandas as pd
 from typing import Union, List
 
 import oventime.input.data_processing as data_processing
-from oventime.config import RETENTION_DAYS, TIMEZONE
+from oventime.config import (RETENTION_DAYS, TIMEZONE, 
+                             LEAF_THRESHOLD, GREEN_ORANGE_THRESHOLD, ORANGE_RED_THRESHOLD, FIRE_THRESHOLD)
 
 
 def cycle_whereat(
@@ -99,10 +100,10 @@ def cycle_whereat(
 
 def status_from_score(score: float):
     status = "Unknown"
-    if score>100: status="leaf"
-    elif score>70: status="green"
-    elif score>30: status="orange"
-    elif score>0: status="red"
+    if score>LEAF_THRESHOLD: status="leaf"
+    elif score>GREEN_ORANGE_THRESHOLD: status="green"
+    elif score>ORANGE_RED_THRESHOLD: status="orange"
+    elif score>FIRE_THRESHOLD: status="red"
     else: status="fire"
     return status
 
