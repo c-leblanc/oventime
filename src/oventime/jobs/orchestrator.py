@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import pandas as pd
 
 from oventime.input.data_download import (
     update_eco2mix_data,
