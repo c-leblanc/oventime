@@ -17,18 +17,6 @@ COUNTRY_CODE = "FR" # Country code used by entsoe-py
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
-# Verify required tokens are present
-_missing = [
-    name for name, val in (
-        ("ENTSOE_API_KEY", ENTSOE_API_KEY),
-        ("TELEGRAM_TOKEN", TELEGRAM_TOKEN),
-    ) if not val
-]
-if _missing:
-    raise RuntimeError(
-        f"Missing required environment variable(s): {', '.join(_missing)}. "
-        f"Please set them in {str(PROJECT_ROOT / '.env')} or in your environment."
-    )
 
 ############################################
 # Parameters
