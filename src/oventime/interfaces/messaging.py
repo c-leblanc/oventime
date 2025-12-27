@@ -76,21 +76,19 @@ def msg_price_window(
     now = pd.Timestamp.now(tz_output).normalize()
     start_day = start.normalize()
 
-    if start_day == now:
-        # aujourd'hui ou cette nuit ?
-        if start.hour >= 22 or start.hour < 6:
-            when = "cette nuit"
-        else:
-            when = "aujourd’hui"
-    elif start_day == now + pd.Timedelta(days=1):
+    if start_day == now and start.hour <= 22:
+        when = "aujourd’hui"
+    elif start_day == now + pd.Timedelta(days=1) and start.hour > 6:
         when = "demain"
+    elif start_day <= now + pd.Timedelta(days=1) and (start.hour >= 22 or start.hour < 6):
+        when = "cette nuit"
     else:
-        # fallback explicite (évite les surprises)
+        # fallback explicite
         when = start.strftime("le %d/%m")
 
     text = (
-        f"⚡🌱 Bonne fenêtre : "
-        f"🕒 *{start_str}* à *{end_str}* 🕒 ({when})\n"
+        f"⚡🌱 Bonne fenêtre {when}: "
+        f"🕒 *{start_str}* à *{end_str}* 🕒 \n"
         f"👉 Bon moment pour lancer les gros consommateurs d'électricité"
     )
 
