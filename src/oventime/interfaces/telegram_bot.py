@@ -39,7 +39,7 @@ async def at(update, context):
 
 async def window(update, context):
     """Répond avec la meilleure fenêtre à venir."""
-    msg = msg_price_window(method=WINDOW_METHOD,severity=OTSU_SEVERITY)
+    msg = msg_price_window()
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 
