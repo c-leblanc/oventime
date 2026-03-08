@@ -8,16 +8,16 @@ from oventime.config import TIMEZONE, API_BASE_URL
 
 def concl_from_score(score: float) -> str:
     if score > 100:
-        return "🍃🍃🍃 A FOND! Y a de l'électricité à ne savoir qu'en faire."
+        return "🍃🍃🍃 A FOND!\nY a de l'électricité à ne savoir qu'en faire."
     if score > 85:
-        return "🟢 VAS-Y : On est large."
+        return "🟢 VAS-Y\nOn fait très peu appel aux centrales gaz."
     if score > 70:
-        return "🟢 CA VA, On tire pas trop sur le gaz."
+        return "🟢 CA VA\nOn tire un peu sur le gaz, mais modérément."
     if score > 30:
-        return "🟠 UN PEU TENDU : C'est pas le pire, mais on tire un peu sur le gaz quand même."
+        return "🟠 UN PEU TENDU\nC'est pas le pire, mais on tire un peu sur le gaz quand même."
     if score > 0:
-        return "🔴 PAS MAINTENANT, Le système est tendu et les centrales gaz tournent à fond."
-    return "🔥🔥🔥 PIRE MOMENT! Le système est si tendu qu'on a démarré les centrales les plus polluantes."
+        return "🔴 PAS MAINTENANT\nLe système est tendu et les centrales gaz tournent à fond."
+    return "🔥🔥🔥 PIRE MOMENT!\nLe système est très tendu, on a démarré les centrales les plus polluantes."
 
 def msg_diagnostic(
         at_time: str = None,
@@ -43,12 +43,13 @@ def msg_diagnostic(
     stock_ou_destock = "on déstocke"
     if diag['details']["storage_use_rate"]<0: stock_ou_destock = "on stocke"
     text = (
-        f"📊 *Etat du système* à {diag['ts'].strftime('%H:%M')} ({diag['ts'].strftime('%d/%m')})\n\n"
+        f"{ccl}\n\n"
+        f"⬇️\n\n"
+        f"📊 *Etat du système* à {diag['ts'].strftime('%H:%M')} ({diag['ts'].strftime('%d/%m')})\n"
         f"🔥 Gaz mobilisé à {diag['details']['gasCCG_use_rate']*100:.0f}%\n"
         f"💧 Hydro/Stockage à {diag['details']['storage_use_rate']*100:.0f}% (**"+stock_ou_destock+"**)\n"
         f"⚛️ Nucléaire à {diag['details']['nuclear_use_rate']*100:.1f}% de sa dispo\n"
-        f"🔎 *Score: {diag['score']:.0f}*\n\n"
-        f"👉 {ccl}"
+        f"👉🔎 *Score: {diag['score']:.0f}*\n\n"
     )
 
     return(text)

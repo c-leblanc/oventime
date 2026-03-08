@@ -5,13 +5,18 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]  # racine du repo
 
-API_BASE_URL = os.getenv("API_BASE_URL")
 
 ############################################
 # Tokens
 ############################################
 
 load_dotenv(PROJECT_ROOT / ".env")
+
+API_BASE_URL = os.getenv(
+    "API_BASE_URL",
+    "http://127.0.0.1:8080",
+)
+
 ENTSOE_API_KEY = os.getenv("ENTSOE_API_KEY")
 COUNTRY_CODE = "FR" # Country code used by entsoe-py
 
