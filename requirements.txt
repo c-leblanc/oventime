@@ -1,4 +1,5 @@
 APScheduler
+aiofiles
 dateparser
 entsoe-py
 fastapi

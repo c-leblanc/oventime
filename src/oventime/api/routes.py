@@ -7,6 +7,8 @@ from oventime.cache.cache import (
     get_nextwindow
 )
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 
 app = FastAPI(
@@ -62,4 +64,9 @@ def next_window(time: str = None):
     return res
 
 
+app.mount("/static", StaticFiles(directory="src/oventime/api/static"), name="static")
+
+@app.get("/")
+def index():
+    return FileResponse("src/oventime/api/static/index.html")
 

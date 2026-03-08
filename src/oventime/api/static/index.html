@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OvenTime</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0e0e0e;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --text: #e8e8e0;
+      --muted: #666;
+      --leaf:   #4ade80;
+      --green:  #86efac;
+      --orange: #fb923c;
+      --red:    #f87171;
+      --fire:   #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    /* Ambient glow behind the card */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--glow-color, #4ade8022) 0%, transparent 70%);
+      pointer-events: none;
+      transition: background 1.5s ease;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .logo span {
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-color, var(--leaf));
+      animation: pulse 2s ease-in-out infinite;
+      margin-left: auto;
+      transition: background 1s ease;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* Main card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+    }
+
+    .status-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .status-badge {
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      color: var(--accent-color, var(--leaf));
+      transition: color 1s ease;
+    }
+
+    /* Score bar */
+    .score-section {
+      margin-bottom: 1.75rem;
+    }
+
+    .score-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.6rem;
+    }
+
+    .score-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--accent-color, var(--leaf));
+      transition: color 1s ease;
+    }
+
+    .score-unit {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent-color, var(--leaf));
+      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background 1s ease;
+    }
+
+    /* Details grid */
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    .detail-cell {
+      background: var(--surface);
+      padding: 0.9rem 1rem;
+    }
+
+    .detail-key {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .detail-val {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* Timestamp footer */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+    }
+
+    .timestamp {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .refresh-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.7rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .refresh-btn:hover {
+      border-color: var(--accent-color, var(--leaf));
+      color: var(--text);
+    }
+
+    /* Error state */
+    .error-msg {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--red);
+      text-align: center;
+      padding: 1rem 0;
+      display: none;
+    }
+
+    /* Loading shimmer */
+    .shimmer {
+      background: linear-gradient(90deg, var(--border) 25%, #2f2f2f 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 2px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Oven<span>Time</span></div>
+      <div class="live-dot" id="liveDot"></div>
+    </div>
+
+    <div class="card">
+      <div class="status-row">
+        <span class="status-label">État du réseau</span>
+        <span class="status-badge" id="statusBadge">—</span>
+      </div>
+
+      <div class="score-section">
+        <div class="score-meta">
+          <div class="score-value" id="scoreValue">—</div>
+          <div class="score-unit">/ 150 pts</div>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="barFill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="details">
+        <div class="detail-cell">
+          <div class="detail-key">Gaz CCG</div>
+          <div class="detail-val" id="detailGas">—</div>
+        </div>
+        <div class="detail-cell">
+          <div class="detail-key">Nucléaire</div>
+          <div class="detail-val" id="detailNuclear">—</div>
+        </div>
+        <div class="detail-cell">
+          <div class="detail-key">Stockage</div>
+          <div class="detail-val" id="detailStorage">—</div>
+        </div>
+        <div class="detail-cell">
+          <div class="detail-key">Score brut</div>
+          <div class="detail-val" id="detailScore">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="timestamp" id="timestamp">—</span>
+      <button class="refresh-btn" onclick="fetchData()">↻ Actualiser</button>
+    </div>
+
+    <div class="error-msg" id="errorMsg">
+      Impossible de contacter l'API
+    </div>
+  </div>
+
+  <script>
+    // ─── CONFIG ────────────────────────────────────────────────
+    // Remplace cette URL par celle de ton API Railway
+    const API_URL = "https://ton-api.railway.app"
+
+    // ─── STATUS CONFIG ─────────────────────────────────────────
+    const STATUS_CONFIG = {
+      leaf:   { emoji: "🍃 Abondance",     color: "#4ade80", glow: "#4ade8025" },
+      green:  { emoji: "🟢 Vert",          color: "#86efac", glow: "#86efac20" },
+      orange: { emoji: "🟠 Tendu",         color: "#fb923c", glow: "#fb923c20" },
+      red:    { emoji: "🔴 Très tendu",    color: "#f87171", glow: "#f8717120" },
+      fire:   { emoji: "🔥 Critique",      color: "#ef4444", glow: "#ef444425" },
+    }
+
+    // ─── DOM REFS ──────────────────────────────────────────────
+    const $status    = document.getElementById("statusBadge")
+    const $score     = document.getElementById("scoreValue")
+    const $bar       = document.getElementById("barFill")
+    const $gas       = document.getElementById("detailGas")
+    const $nuclear   = document.getElementById("detailNuclear")
+    const $storage   = document.getElementById("detailStorage")
+    const $detScore  = document.getElementById("detailScore")
+    const $ts        = document.getElementById("timestamp")
+    const $dot       = document.getElementById("liveDot")
+    const $error     = document.getElementById("errorMsg")
+
+    // ─── HELPERS ───────────────────────────────────────────────
+    const pct = v => `${Math.round(v * 100)} %`
+    const fmt = v => v !== null && v !== undefined ? v.toFixed(1) : "—"
+
+    function setAccent(color, glow) {
+      document.documentElement.style.setProperty("--accent-color", color)
+      document.documentElement.style.setProperty("--glow-color", glow)
+      $dot.style.background = color
+    }
+
+    function render(data) {
+      const cfg = STATUS_CONFIG[data.status] || { emoji: data.status, color: "#e8e8e0", glow: "#ffffff10" }
+
+      setAccent(cfg.color, cfg.glow)
+
+      $status.textContent   = cfg.emoji
+      $score.textContent    = fmt(data.score)
+      $bar.style.width      = `${Math.min(100, (data.score / 150) * 100)}%`
+
+      const d = data.details || {}
+      $gas.textContent      = d.gasCCG_use_rate !== undefined ? pct(d.gasCCG_use_rate) : "—"
+      $nuclear.textContent  = d.nuclear_use_rate !== undefined ? pct(d.nuclear_use_rate) : "—"
+      $storage.textContent  = d.storage_phase !== undefined ? pct(d.storage_phase) : "—"
+      $detScore.textContent = fmt(data.score)
+
+      // Format timestamp
+      if (data.ts) {
+        const d = new Date(data.ts)
+        $ts.textContent = d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+      }
+
+      $error.style.display = "none"
+    }
+
+    // ─── FETCH ─────────────────────────────────────────────────
+    async function fetchData() {
+      try {
+        // Pour tester sans API, décommente la ligne mock ci-dessous :
+        // return render(MOCK_DATA)
+
+        const res = await fetch(`${API_URL}/diagnostic`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        render(data)
+      } catch (e) {
+        console.error(e)
+        $error.style.display = "block"
+        // En cas d'erreur, affiche les données mock pour la démo
+        render(MOCK_DATA)
+      }
+    }
+
+    // ─── MOCK DATA (pour démo / fallback) ──────────────────────
+    const MOCK_DATA = {
+      ts: new Date().toISOString(),
+      status: "green",
+      score: 87.4,
+      details: {
+        gasCCG_use_rate: 0.12,
+        nuclear_use_rate: 0.94,
+        storage_phase: 0.61,
+        storage_use_rate: 0.38,
+        nuclear_bonus: 0,
+        ocgt_malus: 0
+      }
+    }
+
+    // ─── INIT ──────────────────────────────────────────────────
+    fetchData()
+    // Rafraîchit toutes les 5 minutes
+    setInterval(fetchData, 5 * 60 * 1000)
+  </script>
+</body>
+</html>
