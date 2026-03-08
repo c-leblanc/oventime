@@ -5,6 +5,7 @@ fastapi
 httpx
 numpy
 pandas
+pyarrow
 python-dotenv
 python-telegram-bot
 requests
