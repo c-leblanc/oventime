@@ -4,258 +4,237 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OvenTime</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0e0e0e;
-      --surface: #161616;
-      --border: #2a2a2a;
-      --text: #e8e8e0;
-      --muted: #666;
-      --leaf:   #4ade80;
-      --green:  #86efac;
-      --orange: #fb923c;
-      --red:    #f87171;
-      --fire:   #ef4444;
+      --bg:      #fef6e4;
+      --surface: #fffdf7;
+      --border:  rgba(214, 158, 46, 0.25);
+      --shadow:  rgba(180, 120, 20, 0.12);
+      --text:    #3b2a0e;
+      --muted:   #a08050;
+      --amber:   #f5a623;
+      --accent:  #f5a623;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Syne', sans-serif;
+      font-family: 'Nunito', sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 2rem;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(245,166,35,0.10) 0%, transparent 70%);
     }
-
-    /* Ambient glow behind the card */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 30%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      background: radial-gradient(circle, var(--glow-color, #4ade8022) 0%, transparent 70%);
-      pointer-events: none;
-      transition: background 1.5s ease;
-      z-index: 0;
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 480px;
-    }
-
-    /* Header */
+    .container { width: 100%; max-width: 440px; }
     .header {
       display: flex;
-      align-items: baseline;
-      gap: 0.75rem;
-      margin-bottom: 2.5rem;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1.75rem;
     }
-
-    .logo {
-      font-size: 1.5rem;
+    .logo-img {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px var(--shadow);
+    }
+    .title-block { flex: 1; }
+    .title-block h1 {
+      font-size: 1.45rem;
       font-weight: 800;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.01em;
       color: var(--text);
+      line-height: 1.1;
     }
-
-    .logo span {
+    .title-block .subtitle {
+      font-size: 0.72rem;
+      font-family: 'DM Mono', monospace;
       color: var(--muted);
-      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 2px;
     }
-
+    .live-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.25rem 0.6rem;
+      box-shadow: 0 1px 4px var(--shadow);
+    }
     .live-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: var(--accent-color, var(--leaf));
-      animation: pulse 2s ease-in-out infinite;
-      margin-left: auto;
-      transition: background 1s ease;
+      background: #52c97e;
+      animation: pulse 2.2s ease-in-out infinite;
+      transition: background 0.8s;
     }
-
+    .live-label {
+      font-size: 0.6rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.8); }
+      50%       { opacity: 0.45; transform: scale(0.75); }
     }
-
-    /* Main card */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
-      padding: 2rem;
-      margin-bottom: 1rem;
+      border-radius: 20px;
+      padding: 1.75rem;
+      box-shadow: 0 2px 0 rgba(255,255,255,0.9) inset, 0 4px 20px var(--shadow);
+      margin-bottom: 0.9rem;
     }
-
     .status-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
     }
-
     .status-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.65rem;
-      letter-spacing: 0.12em;
+      font-size: 0.68rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--muted);
     }
-
     .status-badge {
-      font-size: 1.5rem;
-      letter-spacing: -0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
       font-weight: 700;
-      color: var(--accent-color, var(--leaf));
-      transition: color 1s ease;
+      color: var(--accent);
+      background: rgba(82, 201, 126, 0.12);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      transition: color 0.8s, background 0.8s;
     }
-
-    /* Score bar */
-    .score-section {
-      margin-bottom: 1.75rem;
-    }
-
+    .score-section { margin-bottom: 1.5rem; }
     .score-meta {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 0.6rem;
+      align-items: flex-end;
+      margin-bottom: 0.7rem;
     }
-
     .score-value {
-      font-family: 'Space Mono', monospace;
-      font-size: 2.5rem;
-      font-weight: 700;
+      font-family: 'DM Mono', monospace;
+      font-size: 3rem;
+      font-weight: 500;
       line-height: 1;
-      color: var(--accent-color, var(--leaf));
-      transition: color 1s ease;
+      color: var(--accent);
+      transition: color 0.8s;
     }
-
+    .score-right { text-align: right; }
     .score-unit {
-      font-family: 'Space Mono', monospace;
+      font-family: 'DM Mono', monospace;
       font-size: 0.65rem;
       color: var(--muted);
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
     }
-
+    .score-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
     .bar-track {
-      height: 4px;
+      height: 6px;
       background: var(--border);
-      border-radius: 2px;
+      border-radius: 6px;
       overflow: hidden;
     }
-
     .bar-fill {
       height: 100%;
-      border-radius: 2px;
-      background: var(--accent-color, var(--leaf));
-      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background 1s ease;
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--accent), #ffe082);
+      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background 0.8s;
     }
-
-    /* Details grid */
     .details {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
+      gap: 0.6rem;
     }
-
     .detail-cell {
-      background: var(--surface);
-      padding: 0.9rem 1rem;
+      background: rgba(245,166,35,0.06);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
     }
-
     .detail-key {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.6rem;
-      letter-spacing: 0.1em;
+      font-size: 0.62rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.25rem;
     }
-
     .detail-val {
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: var(--text);
     }
-
-    /* Timestamp footer */
     .footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 1rem;
+      padding: 0 0.25rem;
     }
-
     .timestamp {
-      font-family: 'Space Mono', monospace;
+      font-family: 'DM Mono', monospace;
       font-size: 0.6rem;
       color: var(--muted);
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
     }
-
     .refresh-btn {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.6rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: none;
-      border: 1px solid var(--border);
-      padding: 0.3rem 0.7rem;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--amber);
+      background: rgba(245,166,35,0.12);
+      border: 1px solid rgba(245,166,35,0.3);
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
       cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
+      transition: background 0.2s, transform 0.1s;
     }
-
-    .refresh-btn:hover {
-      border-color: var(--accent-color, var(--leaf));
-      color: var(--text);
-    }
-
-    /* Error state */
+    .refresh-btn:hover { background: rgba(245,166,35,0.22); transform: scale(1.03); }
+    .refresh-btn:active { transform: scale(0.97); }
     .error-msg {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.7rem;
-      color: var(--red);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: #e05050;
       text-align: center;
-      padding: 1rem 0;
+      padding: 0.75rem 0 0;
       display: none;
-    }
-
-    /* Loading shimmer */
-    .shimmer {
-      background: linear-gradient(90deg, var(--border) 25%, #2f2f2f 50%, var(--border) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 2px;
-    }
-
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+      letter-spacing: 0.04em;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Oven<span>Time</span></div>
-      <div class="live-dot" id="liveDot"></div>
+      <img class="logo-img" src="logo.png" alt="OvenTime logo" />
+      <div class="title-block">
+        <h1>OvenTime</h1>
+        <div class="subtitle">Réseau électrique · France</div>
+      </div>
+      <div class="live-pill">
+        <div class="live-dot" id="liveDot"></div>
+        <span class="live-label">Live</span>
+      </div>
     </div>
 
     <div class="card">
@@ -263,17 +242,18 @@
         <span class="status-label">État du réseau</span>
         <span class="status-badge" id="statusBadge">—</span>
       </div>
-
       <div class="score-section">
         <div class="score-meta">
           <div class="score-value" id="scoreValue">—</div>
-          <div class="score-unit">/ 150 pts</div>
+          <div class="score-right">
+            <div class="score-unit">/ 150 pts</div>
+            <div class="score-label">Score réseau</div>
+          </div>
         </div>
         <div class="bar-track">
           <div class="bar-fill" id="barFill" style="width: 0%"></div>
         </div>
       </div>
-
       <div class="details">
         <div class="detail-cell">
           <div class="detail-key">Gaz CCG</div>
@@ -298,108 +278,71 @@
       <span class="timestamp" id="timestamp">—</span>
       <button class="refresh-btn" onclick="fetchData()">↻ Actualiser</button>
     </div>
-
     <div class="error-msg" id="errorMsg">
-      Impossible de contacter l'API
+      Impossible de contacter l'API — données de démo affichées
     </div>
   </div>
 
   <script>
-    // ─── CONFIG ────────────────────────────────────────────────
-    // Remplace cette URL par celle de ton API Railway
     const API_URL = "https://oventime-api-production.up.railway.app"
 
-    // ─── STATUS CONFIG ─────────────────────────────────────────
     const STATUS_CONFIG = {
-      leaf:   { emoji: "🍃 Abondance",     color: "#4ade80", glow: "#4ade8025" },
-      green:  { emoji: "🟢 Vert",          color: "#86efac", glow: "#86efac20" },
-      orange: { emoji: "🟠 Tendu",         color: "#fb923c", glow: "#fb923c20" },
-      red:    { emoji: "🔴 Très tendu",    color: "#f87171", glow: "#f8717120" },
-      fire:   { emoji: "🔥 Critique",      color: "#ef4444", glow: "#ef444425" },
+      leaf:   { label: "🍃 Abondance",  color: "#3cb96b" },
+      green:  { label: "🟢 Vert",       color: "#52c97e" },
+      orange: { label: "🟠 Tendu",      color: "#e8804a" },
+      red:    { label: "🔴 Très tendu", color: "#e05050" },
+      fire:   { label: "🔥 Critique",   color: "#cc2e2e" },
     }
 
-    // ─── DOM REFS ──────────────────────────────────────────────
-    const $status    = document.getElementById("statusBadge")
-    const $score     = document.getElementById("scoreValue")
-    const $bar       = document.getElementById("barFill")
-    const $gas       = document.getElementById("detailGas")
-    const $nuclear   = document.getElementById("detailNuclear")
-    const $storage   = document.getElementById("detailStorage")
-    const $detScore  = document.getElementById("detailScore")
-    const $ts        = document.getElementById("timestamp")
-    const $dot       = document.getElementById("liveDot")
-    const $error     = document.getElementById("errorMsg")
-
-    // ─── HELPERS ───────────────────────────────────────────────
-    const pct = v => `${Math.round(v * 100)} %`
+    const $ = id => document.getElementById(id)
+    const pct = v => v !== null && v !== undefined ? `${Math.round(v * 100)} %` : "—"
     const fmt = v => v !== null && v !== undefined ? v.toFixed(1) : "—"
 
-    function setAccent(color, glow) {
-      document.documentElement.style.setProperty("--accent-color", color)
-      document.documentElement.style.setProperty("--glow-color", glow)
-      $dot.style.background = color
+    function setAccent(color) {
+      document.documentElement.style.setProperty("--accent", color)
+      $("liveDot").style.background = color
     }
 
     function render(data) {
-      const cfg = STATUS_CONFIG[data.status] || { emoji: data.status, color: "#e8e8e0", glow: "#ffffff10" }
-
-      setAccent(cfg.color, cfg.glow)
-
-      $status.textContent   = cfg.emoji
-      $score.textContent    = fmt(data.score)
-      $bar.style.width      = `${Math.min(100, (data.score / 150) * 100)}%`
-
+      const cfg = STATUS_CONFIG[data.status] || { label: data.status, color: "#f5a623" }
+      setAccent(cfg.color)
+      $("statusBadge").textContent   = cfg.label
+      $("statusBadge").style.color   = cfg.color
+      $("statusBadge").style.background = cfg.color + "1a"
+      $("scoreValue").textContent    = fmt(data.score)
+      $("barFill").style.width       = `${Math.min(100, (data.score / 150) * 100)}%`
       const d = data.details || {}
-      $gas.textContent      = d.gasCCG_use_rate !== undefined ? pct(d.gasCCG_use_rate) : "—"
-      $nuclear.textContent  = d.nuclear_use_rate !== undefined ? pct(d.nuclear_use_rate) : "—"
-      $storage.textContent  = d.storage_phase !== undefined ? pct(d.storage_phase) : "—"
-      $detScore.textContent = fmt(data.score)
-
-      // Format timestamp
+      $("detailGas").textContent     = d.gasCCG_use_rate !== undefined ? pct(d.gasCCG_use_rate) : "—"
+      $("detailNuclear").textContent = d.nuclear_use_rate !== undefined ? pct(d.nuclear_use_rate) : "—"
+      $("detailStorage").textContent = d.storage_phase !== undefined ? pct(d.storage_phase) : "—"
+      $("detailScore").textContent   = fmt(data.score)
       if (data.ts) {
-        const d = new Date(data.ts)
-        $ts.textContent = d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+        const dt = new Date(data.ts)
+        $("timestamp").textContent = dt.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
       }
-
-      $error.style.display = "none"
+      $("errorMsg").style.display = "none"
     }
 
-    // ─── FETCH ─────────────────────────────────────────────────
     async function fetchData() {
       try {
-        // Pour tester sans API, décommente la ligne mock ci-dessous :
-        // return render(MOCK_DATA)
-
         const res = await fetch(`${API_URL}/diagnostic`)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
-        render(data)
+        render(await res.json())
       } catch (e) {
         console.error(e)
-        $error.style.display = "block"
-        // En cas d'erreur, affiche les données mock pour la démo
+        $("errorMsg").style.display = "block"
         render(MOCK_DATA)
       }
     }
 
-    // ─── MOCK DATA (pour démo / fallback) ──────────────────────
     const MOCK_DATA = {
       ts: new Date().toISOString(),
       status: "green",
       score: 87.4,
-      details: {
-        gasCCG_use_rate: 0.12,
-        nuclear_use_rate: 0.94,
-        storage_phase: 0.61,
-        storage_use_rate: 0.38,
-        nuclear_bonus: 0,
-        ocgt_malus: 0
-      }
+      details: { gasCCG_use_rate: 0.12, nuclear_use_rate: 0.94, storage_phase: 0.61 }
     }
 
-    // ─── INIT ──────────────────────────────────────────────────
     fetchData()
-    // Rafraîchit toutes les 5 minutes
     setInterval(fetchData, 5 * 60 * 1000)
   </script>
 </body>
