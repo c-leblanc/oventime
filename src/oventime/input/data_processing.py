@@ -1,13 +1,13 @@
 import pandas as pd
 from pathlib import Path
 
-from oventime.config import PROJECT_ROOT
+from oventime.config import DATA_DIR
 
 _cache = {"data": None, "mtime": None}
 
 def init_data():
-    output_path = Path(PROJECT_ROOT / "data/processed/init_data.parquet")
-    input_path = Path(PROJECT_ROOT / "data/raw/eco2mix.parquet")
+    output_path = Path(DATA_DIR / "processed/init_data.parquet")
+    input_path = Path(DATA_DIR / "raw/eco2mix.parquet")
 
     # Recalcule le parquet traité si les données brutes ont changé
     if not output_path.exists() or input_path.stat().st_mtime > output_path.stat().st_mtime:

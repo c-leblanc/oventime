@@ -3,7 +3,7 @@ from datetime import timedelta
 import pandas as pd
 from entsoe import EntsoePandasClient
 
-from oventime.config import PROJECT_ROOT, RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
+from oventime.config import DATA_DIR, RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
 
 ECO2MIX_URL = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-national-tr/records"
 
@@ -81,7 +81,7 @@ def update_eco2mix_data(
             print(msg)
     
     log("\n[Eco2Mix Data Update]")
-    raw_dir = PROJECT_ROOT / "data" / "raw"
+    raw_dir = DATA_DIR / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Load existing data
@@ -185,7 +185,7 @@ def update_price_data(
     log("\n[Day-Ahead Price Data Update]")
 
     client = EntsoePandasClient(api_key=ENTSOE_API_KEY)
-    raw_dir = PROJECT_ROOT / "data" / "raw"
+    raw_dir = DATA_DIR / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
     price_file = raw_dir / "DAprices.parquet"
 
@@ -254,7 +254,7 @@ def update_price_data(
     return(last_timestamp)
 
 def last_ts_prices():
-    price_file = PROJECT_ROOT / "data" / "raw" / "DAprices.parquet"
+    price_file = DATA_DIR / "raw" / "DAprices.parquet"
     if not price_file.exists():
         return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
     prices = pd.read_parquet(price_file)
@@ -283,7 +283,7 @@ def should_update_prices(
     return last_timestamp < (now + pd.Timedelta(hours=min_foresight_prices))
 
 def last_ts_eco2mix():
-    eco2mix_file = PROJECT_ROOT / "data" / "raw" / "eco2mix.parquet"
+    eco2mix_file = DATA_DIR / "raw" / "eco2mix.parquet"
     # Check if the eco2mix file exists
     if not eco2mix_file.exists():
         return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
