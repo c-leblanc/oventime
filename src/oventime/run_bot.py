@@ -1,15 +1,10 @@
 import sys
-from pathlib import Path
+import logging
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 from telegram.ext import ApplicationBuilder, CommandHandler
+
 from oventime.interfaces.telegram_bot import check_score_job
-
-
-# Ajouter src au PYTHONPATH
-ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
 from oventime.config import TELEGRAM_TOKEN
 from oventime.interfaces.telegram_bot import *
 

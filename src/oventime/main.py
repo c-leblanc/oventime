@@ -1,9 +1,14 @@
 from contextlib import asynccontextmanager, suppress
 import asyncio
+import sys
+import logging
 import uvicorn
 
 from oventime.jobs.orchestrator import orchestrator_loop
 from oventime.api.routes import app
+
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 
 @asynccontextmanager
@@ -26,5 +31,17 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8080
+        port=8080,
+        log_config={
+            "version": 1,
+            "disable_existing_loggers": False,
+            "handlers": {
+                "default": {
+                    "class": "logging.StreamHandler",
+                    "stream": "ext://sys.stdout",
+                },
+            },
+            "root": {"handlers": ["default"], "level": "INFO"},
+        }
     )
+
