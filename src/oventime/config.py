@@ -17,6 +17,7 @@ API_BASE_URL = os.getenv(
     "API_BASE_URL",
     "http://127.0.0.1:8080",
 )
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN")
 
 ENTSOE_API_KEY = os.getenv("ENTSOE_API_KEY")
 COUNTRY_CODE = "FR" # Country code used by entsoe-py

@@ -6,7 +6,7 @@ import asyncio
 from oventime.interfaces.messaging import msg_diagnostic, msg_price_window
 from oventime.config import (
     LEAF_THRESHOLD, FIRE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY,
-    API_BASE_URL)
+    API_BASE_URL, INTERNAL_API_TOKEN)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -33,7 +33,7 @@ async def at(update, context):
         await update.message.reply_text(str(e), parse_mode="Markdown")
         return
     except Exception as e:
-        await update.message.reply_text(f"Erreur lors du calcul du diagnostic", parse_mode="Markdown")
+        await update.message.reply_text(f"Donnée non disponible", parse_mode="Markdown")
         return
     await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -46,20 +46,35 @@ async def window(update, context):
 #############################################
 ## AUTOMATIC ALERT MESSAGES
 
-SUBSCRIBERS_KEY = "subscribers"
-
 async def start_auto(update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    subscribers = context.application.bot_data.setdefault(SUBSCRIBERS_KEY, set())
-    subscribers.add(chat_id)
-    print(f"Subscriber to automatic messages added: {chat_id}. (Total={len(subscribers)} active subscribers)")
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.post(
+                f"{API_BASE_URL}/tsubs/{chat_id}",
+                headers = {"x-internal-token": INTERNAL_API_TOKEN}
+                )
+            r.raise_for_status()
+    except Exception:
+        await update.message.reply_text("⚠️ Erreur lors de l'inscription, réessaie plus tard.")
+        return    
+    print(f"Telegram subscriber added: {chat_id}.")
     await update.message.reply_text("✅ ACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
+
 
 async def stop_auto(update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    subscribers = context.application.bot_data.setdefault(SUBSCRIBERS_KEY, set())
-    subscribers.discard(chat_id)
-    print("Subscriber to automatic messages removed: {chat_id}. (Total={len(subscribers)} active subscribers)")
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.delete(
+                f"{API_BASE_URL}/tsubs/{chat_id}",
+                headers={"x-internal-token": INTERNAL_API_TOKEN}
+                )
+            r.raise_for_status()
+    except Exception:
+        await update.message.reply_text("⚠️ Erreur lors de la désinscription, réessaie plus tard.")
+        return 
+    print(f"Telegram subscriber deactivated: {chat_id}.")
     await update.message.reply_text("❌ INACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
 
 
@@ -84,7 +99,6 @@ async def check_score_job(application):
     application.bot_data["last_seen_ts"] = ts
 
     score = diag["score"]
-    subscribers = application.bot_data.get(SUBSCRIBERS_KEY, set())
 
     state_high = application.bot_data.setdefault("last_alert_high", False)
     state_low = application.bot_data.setdefault("last_alert_low", False)
@@ -116,7 +130,14 @@ async def check_score_job(application):
         application.bot_data["last_alert_low"] = True
 
     if text is not None:
-        for chat_id in subscribers:
+        async with httpx.AsyncClient(timeout=2) as client:
+            r = await client.get(
+                f"{API_BASE_URL}/tsubs",
+                headers= {"x-internal-token": INTERNAL_API_TOKEN}
+                )
+            r.raise_for_status()
+            subscribers = r.json()
+        for chat_id in subscribers["chat_ids"]:
             await application.bot.send_message(chat_id=chat_id, text=text)
 
 

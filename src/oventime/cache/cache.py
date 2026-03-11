@@ -3,9 +3,9 @@ from pathlib import Path
 import time
 
 from oventime.utils import to_epoch, to_utc_timestamp
-from oventime.config import TIMEZONE
+from oventime.config import TIMEZONE, DATA_DIR
 
-DB_PATH = Path(__file__).parent / "cache.sqlite"
+DB_PATH = DATA_DIR / "cache.sqlite"
 
 
 def get_connection():
@@ -40,10 +40,21 @@ def init_db():
     ON cache (ts)
     """)
 
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS subscribers (
+        chat_id INTEGER PRIMARY KEY,
+        first_seen INTEGER NOT NULL,
+        last_activated INTEGER,
+        last_deactivated INTEGER,
+        active INTEGER NOT NULL DEFAULT 1
+    );
+    """)
+
     conn.commit()
     conn.close()
 
-
+#############################################
+## Output cache
 
 def save(output, source_version="v1"):
     conn = get_connection()
@@ -173,3 +184,41 @@ def get_nextwindow(target_time=None, tz_output=TIMEZONE):
         "nextwind_start": to_utc_timestamp(row[1]).tz_convert(tz_output),
         "nextwind_end": to_utc_timestamp(row[2]).tz_convert(tz_output)
     }
+
+
+#############################################
+## Telegram Subscribers (tsubs)
+
+def get_tsubs() -> set:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT chat_id FROM subscribers WHERE active = 1")
+    rows = cur.fetchall()
+    conn.close()
+    return {row[0] for row in rows}
+
+def add_tsubs(chat_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    now = int(time.time())
+    cur.execute("""
+        INSERT INTO subscribers (chat_id, first_seen, last_activated, active)
+        VALUES (?, ?, ?, 1)
+        ON CONFLICT(chat_id) DO UPDATE SET
+            last_activated = excluded.last_activated,
+            active = 1
+    """, (chat_id, now, now))
+    conn.commit()
+    conn.close()
+
+def remove_tsubs(chat_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    now = int(time.time())
+    cur.execute("""
+        UPDATE subscribers
+        SET active = 0, last_deactivated = ?
+        WHERE chat_id = ?
+    """, (now, chat_id))
+    conn.commit()
+    conn.close()

@@ -1,14 +1,19 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Header
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from typing import Optional
 
 from oventime.cache.cache import (
     get_status,
     get_fulldiag,
-    get_nextwindow
+    get_nextwindow,
+    get_tsubs,
+    add_tsubs,
+    remove_tsubs
 )
 
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from oventime.config import INTERNAL_API_TOKEN
 
 
 app = FastAPI(
@@ -16,6 +21,12 @@ app = FastAPI(
     version="0.1",
     description="API read-only pour l'état du système électrique"
 )
+
+
+def _check_token(token: Optional[str]):
+    if not INTERNAL_API_TOKEN or token != INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
 
 
 @app.get("/status")
@@ -62,6 +73,36 @@ def next_window(time: str = None):
         raise HTTPException(status_code=404, detail="No estimates available for the next window")
 
     return res
+
+# ─────────────────────────────────────────────
+# Telegram subscribers
+
+@app.get("/tsubs")
+def list_tsubs(x_internal_token: Optional[str] = Header(default=None)):
+    """Retourne la liste des chat_id abonnés actifs."""
+    _check_token(x_internal_token)
+    subs = get_tsubs()
+    return {"chat_ids": list(subs)}
+
+
+@app.post("/tsubs/{chat_id}", status_code=200)
+def subscribe(chat_id: int, x_internal_token: Optional[str] = Header(default=None)):
+    """Active (ou réactive) un abonné."""
+    _check_token(x_internal_token)
+    add_tsubs(chat_id)
+    return {"status": "subscribed", "chat_id": chat_id}
+
+
+@app.delete("/tsubs/{chat_id}", status_code=200)
+def unsubscribe(chat_id: int, x_internal_token: Optional[str] = Header(default=None)):
+    """Désactive un abonné."""
+    _check_token(x_internal_token)
+    remove_tsubs(chat_id)
+    return {"status": "unsubscribed", "chat_id": chat_id}
+
+
+# ─────────────────────────────────────────────
+
 
 
 app.mount("/static", StaticFiles(directory="src/oventime/api/static"), name="static")
