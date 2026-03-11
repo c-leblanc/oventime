@@ -1,7 +1,14 @@
 import sys
 import logging
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setLevel(logging.INFO)
+
+stderr_handler = logging.StreamHandler(sys.stderr)
+stderr_handler.setLevel(logging.ERROR)
+
+logging.basicConfig(level=logging.INFO, handlers=[stdout_handler, stderr_handler])
+
 from telegram.ext import ApplicationBuilder, CommandHandler
 
 from oventime.interfaces.telegram_bot import check_score_job

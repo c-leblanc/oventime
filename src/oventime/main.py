@@ -7,9 +7,13 @@ import uvicorn
 from oventime.jobs.orchestrator import orchestrator_loop
 from oventime.api.routes import app
 
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setLevel(logging.INFO)
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+stderr_handler = logging.StreamHandler(sys.stderr)
+stderr_handler.setLevel(logging.ERROR)
 
+logging.basicConfig(level=logging.INFO, handlers=[stdout_handler, stderr_handler])
 
 @asynccontextmanager
 async def lifespan(app):
@@ -31,17 +35,6 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8080,
-        log_config={
-            "version": 1,
-            "disable_existing_loggers": False,
-            "handlers": {
-                "default": {
-                    "class": "logging.StreamHandler",
-                    "stream": "ext://sys.stdout",
-                },
-            },
-            "root": {"handlers": ["default"], "level": "INFO"},
-        }
+        port=8080
     )
 
