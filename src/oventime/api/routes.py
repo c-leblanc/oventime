@@ -2,8 +2,6 @@ from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from typing import Optional
-
 from oventime.cache.cache import (
     get_status,
     get_fulldiag,
@@ -23,7 +21,7 @@ app = FastAPI(
 )
 
 
-def _check_token(token: Optional[str]):
+def _check_token(token: str | None):
     if not INTERNAL_API_TOKEN or token != INTERNAL_API_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -78,7 +76,7 @@ def next_window(time: str = None):
 # Telegram subscribers
 
 @app.get("/tsubs")
-def list_tsubs(x_internal_token: Optional[str] = Header(default=None)):
+def list_tsubs(x_internal_token: str | None = Header(default=None)):
     """Retourne la liste des chat_id abonnés actifs."""
     _check_token(x_internal_token)
     subs = get_tsubs()
@@ -86,7 +84,7 @@ def list_tsubs(x_internal_token: Optional[str] = Header(default=None)):
 
 
 @app.post("/tsubs/{chat_id}", status_code=200)
-def subscribe(chat_id: int, x_internal_token: Optional[str] = Header(default=None)):
+def subscribe(chat_id: int, x_internal_token: str | None = Header(default=None)):
     """Active (ou réactive) un abonné."""
     _check_token(x_internal_token)
     add_tsubs(chat_id)
@@ -94,7 +92,7 @@ def subscribe(chat_id: int, x_internal_token: Optional[str] = Header(default=Non
 
 
 @app.delete("/tsubs/{chat_id}", status_code=200)
-def unsubscribe(chat_id: int, x_internal_token: Optional[str] = Header(default=None)):
+def unsubscribe(chat_id: int, x_internal_token: str | None = Header(default=None)):
     """Désactive un abonné."""
     _check_token(x_internal_token)
     remove_tsubs(chat_id)
