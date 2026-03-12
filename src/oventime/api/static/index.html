@@ -315,7 +315,7 @@
       const d = data.details || {}
       $("detailGas").textContent     = d.gasCCG_use_rate !== undefined ? pct(d.gasCCG_use_rate) : "—"
       $("detailNuclear").textContent = d.nuclear_use_rate !== undefined ? pct(d.nuclear_use_rate) : "—"
-      $("detailStorage").textContent = d.storage_phase !== undefined ? pct(d.storage_phase) : "—"
+      $("detailStorage").textContent = d.storage_use_rate !== undefined ? pct(d.storage_use_rate) : "—"
       $("detailScore").textContent   = fmt(data.score)
       if (data.ts) {
         const dt = new Date(data.ts)
