@@ -1,7 +1,6 @@
 import dateparser
 import pandas as pd
 from typing import Union
-import re
 
 from oventime.config import TIMEZONE
 
@@ -139,3 +138,10 @@ def to_utc_timestamp(
     )
 
 
+def trim_trailing_nans(df : pd.DataFrame) -> pd.DataFrame:
+    """
+    Removes rows with missing values at the end of a data frame.
+    """
+    while len(df) > 0 and df.iloc[-1].isna().any():
+        df = df.iloc[:-1]
+    return df

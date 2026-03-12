@@ -1,13 +1,16 @@
 import requests
+import logging
 from datetime import timedelta
 import pandas as pd
 from entsoe import EntsoePandasClient
+from entsoe.exceptions import NoMatchingDataError
 
 from oventime.config import DATA_DIR, RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
+from oventime.utils import trim_trailing_nans
+
+logger = logging.getLogger(__name__)
 
 ECO2MIX_URL = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-national-tr/records"
-
-
 
 
 def eco2mix_raw(start, end, limit=100, vars=None):
@@ -59,12 +62,13 @@ def eco2mix_df(start=None, end=None, limit=100, vars=None) -> pd.DataFrame:
         )
 
     df = df.set_index("date_heure").sort_index()
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
 
     return df
 
 def update_eco2mix_data(
-        retention_days: int = RETENTION_DAYS, 
-        verbose: bool = True
+        retention_days: int = RETENTION_DAYS
         ) -> pd.Timestamp:
     """
     Update local eco2mix data from API requests up to now, cleans up data older than <retention_days> days ago.
@@ -76,11 +80,8 @@ def update_eco2mix_data(
     :return: Last timestamp without missing data after the update
     :rtype: Timestamp
     """
-    def log(msg):
-        if verbose:
-            print(msg)
     
-    log("\n[Eco2Mix Data Update]")
+    logger.info("\n[Eco2Mix Data Update]")
     raw_dir = DATA_DIR / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
@@ -88,18 +89,17 @@ def update_eco2mix_data(
     eco2mix_file = raw_dir / "eco2mix.parquet"
     if eco2mix_file.exists():
         local = pd.read_parquet(eco2mix_file)
-        while len(local) > 0 and local.iloc[-1].isna().any():
-            local = local.iloc[:-1]
+        local = trim_trailing_nans(local)
         if len(local) == 0:
             last_timestamp = None
-            log("Local data - None left after trimming")
+            logger.info("Local data - None left after trimming")
         else:
             last_timestamp = local.index.max()
-            log(f"Local data - Last timestamp: {last_timestamp}")
+            logger.info(f"Local data - Last timestamp: {last_timestamp}")
     else:
         local = None
         last_timestamp = None
-        log("Local data - None")
+        logger.info("Local data - None")
 
     # 2. Determine download window
     now = pd.Timestamp.now(tz="UTC").floor("15min")
@@ -107,11 +107,11 @@ def update_eco2mix_data(
         start = now - pd.Timedelta(days=retention_days)
     else:
         start = last_timestamp + pd.Timedelta(minutes=15)
-    log(f"Attempting to download data starting from: {start}")
-
+    
     if start >= now:
-        log("Data already up to date. Nothing to download.")
+        logger.info("Data already up to date. Nothing to download.")
         return(last_timestamp)
+    else: logger.info(f"Attempting to download data starting from: {start}")
 
     # 3. Download missing data & concatenate
     combined = None
@@ -119,23 +119,24 @@ def update_eco2mix_data(
         try:
             new_data = eco2mix_df(start=start, end=now)
         except Exception as e:
-            log(f"Error fetching eco2mix_df(start={start}, end={now}) : {e!r}")
+            logger.error(f"Error fetching eco2mix_df(start={start}, end={now}) : {e!r}")
             break
 
         if new_data is None or len(new_data) == 0:
-            log(f"No data for {start} -> {now}, stop downloading.")
+            logger.info(f"No data for {start} -> {now}, stop downloading.")
             break
 
         if not isinstance(new_data.index, pd.DatetimeIndex):
-            log(f"Index error: not interpretable as date-time.")
+            logger.error(f"Index error: not interpretable as date-time.")
             break
         
         new_data.index = pd.to_datetime(new_data.index, utc=True)
-        log(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
+        logger.info(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
         
         if local is not None:
             if new_data.isna().values.all():
-                log("Downloaded data is empty.")
+                logger.error("Downloaded data is empty.")
+                break
             else: combined = pd.concat([local, new_data])
         else:
             combined = new_data
@@ -145,28 +146,26 @@ def update_eco2mix_data(
         start = last_timestamp + pd.Timedelta(minutes=15)
 
     if combined is None or len(combined) == 0:
-        log("No eco2mix data available.")
+        logger.error("No eco2mix data available.")
         return
 
-    # 5. Remove data older than retention_days
+    # 4. Remove data older than retention_days
     limit = now - pd.Timedelta(days=retention_days)
     if min(combined.index) < limit:
         combined = combined[combined.index >= limit]
-        log(f"Removed data older than: {limit}")
+        logger.info(f"Removed data older than: {limit}")
 
-    # 6. Save final cleaned dataset
+    # 5. Save final cleaned dataset
     combined.to_parquet(eco2mix_file)
-    log("Update completed.")
+    logger.info("Update completed.")
 
-    # 7. Return the last timestamp with complete data
-    while len(combined) > 0 and combined.iloc[-1].isna().any():
-            combined = combined.iloc[:-1]
+    # 6. Return the last timestamp with complete data
+    combined = trim_trailing_nans(combined)
     last_timestamp = combined.index.max()
     return(last_timestamp)
 
 def update_price_data(
-        retention_days: int = RETENTION_DAYS, 
-        verbose: bool = True
+        retention_days: int = RETENTION_DAYS
         ) -> pd.Timestamp:
     """
     Update local price data from the ENTSO-E API up to now, cleans up data older than <retention_days> days ago.
@@ -178,11 +177,8 @@ def update_price_data(
     :return: Last timestamp without missing data after the update
     :rtype: Timestamp
     """
-    def log(msg):
-        if verbose:
-            print(msg)
 
-    log("\n[Day-Ahead Price Data Update]")
+    logger.info("\n[Day-Ahead Price Data Update]")
 
     client = EntsoePandasClient(api_key=ENTSOE_API_KEY)
     raw_dir = DATA_DIR / "raw"
@@ -195,11 +191,11 @@ def update_price_data(
         # ensure index is timezone-aware UTC
         local.index = pd.to_datetime(local.index, utc=True)
         last_timestamp = local.index.max()
-        log(f"Local data - Last timestamp: {last_timestamp}")
+        logger.info(f"Local data - Last timestamp: {last_timestamp}")
     else:
         local = None
         last_timestamp = None
-        log("No existing price file found.")
+        logger.info("No existing price file found.")
 
     # 2. Determine download window
     now = pd.Timestamp.now(tz="UTC").floor("15min")
@@ -208,13 +204,16 @@ def update_price_data(
     else:
         start = last_timestamp + pd.Timedelta(minutes=15)
     end = now + pd.Timedelta(days=2) # overshoot to include the next day entirely
-    log(f"Attempting to download from {start} to {end}")
+    logger.info(f"Attempting to download from {start} to {end}")
 
     # 3. Download missing price data
     try:
         new_data = client.query_day_ahead_prices(COUNTRY_CODE, start=start, end=end)
+    except NoMatchingDataError: 
+        logger.info(f"Data already up to date. Nothing to download.")
+        return(last_timestamp)
     except Exception as e:
-        log(f"Data already up to date. Nothing to download. {e}")
+        logger.error(f"Error when fetching price data: {e!r}")
         return(last_timestamp)
 
     new_data = new_data.to_frame(name="price")
@@ -223,7 +222,7 @@ def update_price_data(
     if new_data.index.tz is None: new_data.index = new_data.index.tz_localize("UTC")
     else: new_data.index = new_data.index.tz_convert("UTC")
 
-    log(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
+    logger.info(f"Downloaded data from {new_data.index.min()} to {new_data.index.max()}")
 
     # 4. Concatenate   
     if local is not None:
@@ -241,15 +240,14 @@ def update_price_data(
     limit = now - pd.Timedelta(days=retention_days)
     if min(combined.index) < limit:
         combined = combined[combined.index >= limit]
-        log(f"Removed data older than: {limit}.")
+        logger.info(f"Removed data older than: {limit}.")
 
     # 6. Save in a parquet file
     combined.to_parquet(price_file)
-    log("Update completed.")
+    logger.info("Update completed.")
 
     # 7. Return the last timestamp with complete data
-    while len(combined) > 0 and combined.iloc[-1].isna().any():
-            combined = combined.iloc[:-1]
+    combined = trim_trailing_nans(combined)
     last_timestamp = combined.index.max()
     return(last_timestamp)
 
@@ -289,8 +287,7 @@ def last_ts_eco2mix():
         return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
     # Load and remove final rows with missing data
     eco2mix = pd.read_parquet(eco2mix_file)
-    while len(eco2mix) > 0 and eco2mix.iloc[-1].isna().any():
-            eco2mix = eco2mix.iloc[:-1]
+    eco2mix = trim_trailing_nans(eco2mix)
     # Return last timestamp (or default if no rows left) 
     if len(eco2mix) == 0:
         return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
