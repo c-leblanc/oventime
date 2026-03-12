@@ -30,7 +30,7 @@ async def orchestrator_loop(freq=FREQ_UPDATE):
         # --- A. eco2mix data ---
         if should_update_eco2mix(last_timestamp_eco2mix):
             try:
-                last_timestamp_eco2mix = update_eco2mix_data(verbose=True)
+                last_timestamp_eco2mix = update_eco2mix_data()
                 logger.info(f"[{datetime.now()}] eco2mix mis à jour")
             except Exception as e:
                 logger.error(f"[{datetime.now()}] Erreur mise à jour eco2mix: {e!r}")
@@ -39,7 +39,7 @@ async def orchestrator_loop(freq=FREQ_UPDATE):
         # --- B. Day-Ahead Prices data --
         if should_update_prices(last_timestamp_prices):
             try:
-                last_timestamp_prices = update_price_data(verbose=True)
+                last_timestamp_prices = update_price_data()
                 logger.info(f"[{datetime.now()}] DA Prices mis à jour")
             except Exception as e:
                 logger.error(f"[{datetime.now()}] Erreur mise à jour prices: {e!r}")

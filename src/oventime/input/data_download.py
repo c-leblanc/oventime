@@ -75,8 +75,6 @@ def update_eco2mix_data(
     
     :param retention_days: Period for which data is kept locally (changes prefered in oven_time.config -> RETENTION_DAYS)
     :type retention_days: int
-    :param verbose: Logging
-    :type verbose: bool
     :return: Last timestamp without missing data after the update
     :rtype: Timestamp
     """
@@ -172,8 +170,6 @@ def update_price_data(
     
     :param retention_days: Period for which data is kept locally (changes prefered in oven_time.config -> RETENTION_DAYS)
     :type retention_days: int
-    :param verbose: Logging
-    :type verbose: bool
     :return: Last timestamp without missing data after the update
     :rtype: Timestamp
     """
