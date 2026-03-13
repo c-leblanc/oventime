@@ -23,14 +23,14 @@ logging.basicConfig(level=logging.INFO, handlers=[stdout_handler, stderr_handler
 @asynccontextmanager
 async def lifespan(app):
     # ── Bot Telegram ──
-    bot_app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    bot_app.add_handler(CommandHandler("m", now))
-    bot_app.add_handler(CommandHandler("a", at))
-    bot_app.add_handler(CommandHandler("q", window))
-    bot_app.add_handler(CommandHandler("start_auto", start_auto))
-    bot_app.add_handler(CommandHandler("stop_auto", stop_auto))
-
     if TELEGRAM_TOKEN:
+        bot_app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+        bot_app.add_handler(CommandHandler("m", now))
+        bot_app.add_handler(CommandHandler("a", at))
+        bot_app.add_handler(CommandHandler("q", window))
+        bot_app.add_handler(CommandHandler("start_auto", start_auto))
+        bot_app.add_handler(CommandHandler("stop_auto", stop_auto))
+
         await bot_app.initialize()
         await bot_app.start()
         await bot_app.updater.start_polling()

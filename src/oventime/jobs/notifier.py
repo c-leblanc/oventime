@@ -74,8 +74,8 @@ async def check_and_notify():
 
 async def _notify_telegram(text: str):
     chat_ids = get_tsubs()
-    if not chat_ids:
-        return
+    if not chat_ids: return
+    if not TELEGRAM_TOKEN: return
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     async with httpx.AsyncClient(timeout=5) as client:
         for chat_id in chat_ids:
