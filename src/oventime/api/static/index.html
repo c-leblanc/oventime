@@ -424,8 +424,8 @@
 
     // Convertit une clé VAPID base64url en Uint8Array (requis par subscribe())
     function urlBase64ToUint8Array(b64) {
-      const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, "=")
-      const raw = atob(padded.replace(/-/g, "+").replace(/_/g, "/"))
+      const b64standard = b64.replace(/-/g, '+').replace(/_/g, '/')
+      const raw = atob(b64standard)
       return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
     }
 
