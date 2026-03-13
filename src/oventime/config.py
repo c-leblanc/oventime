@@ -22,7 +22,7 @@ INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN")
 ENTSOE_API_KEY = os.getenv("ENTSOE_API_KEY")
 COUNTRY_CODE = "FR" # Country code used by entsoe-py
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN","")
 
 EMAIL = os.getenv("EMAIL","")
 
