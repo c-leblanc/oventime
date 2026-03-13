@@ -15,21 +15,14 @@ def update_cache(times, source_version="v1"):
 
 def update_cache_curr(source_version="v1"):
     oventime.cache.cache.init_db()
+    diag = oventime.core.diagnostic.output()
+    dayahead = oventime.core.dayahead.output(now=diag["time"])
+    if diag["time"]==dayahead["time"]:
+        output = (diag | dayahead)
+    else: 
+        raise ValueError("Inconsistent timestamps.")
+    oventime.cache.cache.save(output=output, source_version=source_version)
 
-    # Dernier ts en cache
-    last = oventime.cache.cache.get_last_ts()  # à ajouter dans cache.py
-    now = pd.Timestamp.utcnow().floor("15min")
-
-    if last is None:
-        times = [now]
-    else:
-        times = pd.date_range(last + pd.Timedelta("15min"), now, freq="15min")
-
-    for ts in times:
-        diag = oventime.core.diagnostic.output(target_time=ts)
-        dayahead = oventime.core.dayahead.output(now=ts)
-        if diag["time"] == dayahead["time"]:
-            oventime.cache.cache.save(diag | dayahead, source_version=source_version)
 
 if __name__ == "__main__":
     # exemple : recalcul des 48 dernières heures

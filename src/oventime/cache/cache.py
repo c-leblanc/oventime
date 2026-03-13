@@ -196,16 +196,6 @@ def get_nextwindow(target_time=None, tz_output=TIMEZONE):
         "nextwind_end": to_utc_timestamp(row[2]).tz_convert(tz_output)
     }
 
-def get_last_ts():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT MAX(ts) FROM cache")
-    row = cur.fetchone()
-    conn.close()
-    if row[0] is None:
-        return None
-    return to_utc_timestamp(row[0])
-
 #############################################
 ## Web Subscribers (wsubs)
 
