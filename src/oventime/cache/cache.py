@@ -1,4 +1,5 @@
 import sqlite3
+import json
 from pathlib import Path
 import time
 
@@ -47,6 +48,16 @@ def init_db():
         last_activated INTEGER,
         last_deactivated INTEGER,
         active INTEGER NOT NULL DEFAULT 1
+    );
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS web_subscribers (
+        endpoint TEXT PRIMARY KEY,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        first_seen INTEGER NOT NULL,
+        last_activated INTEGER NOT NULL
     );
     """)
 
@@ -188,16 +199,38 @@ def get_nextwindow(target_time=None, tz_output=TIMEZONE):
 #############################################
 ## Web Subscribers (wsubs)
 
-_web_subscriptions: dict = {}
-
 def get_wsubs() -> dict:
-    return dict(_web_subscriptions)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT endpoint, p256dh, auth FROM web_subscribers")
+    rows = cur.fetchall()
+    conn.close()
+    return {
+        row[0]: {"endpoint": row[0], "keys": {"p256dh": row[1], "auth": row[2]}}
+        for row in rows
+    }
 
 def add_wsubs(endpoint: str, sub: dict):
-    _web_subscriptions[endpoint] = sub
+    conn = get_connection()
+    cur = conn.cursor()
+    now = int(time.time())
+    cur.execute("""
+        INSERT INTO web_subscribers (endpoint, p256dh, auth, first_seen, last_activated)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(endpoint) DO UPDATE SET
+            p256dh = excluded.p256dh,
+            auth = excluded.auth,
+            last_activated = excluded.last_activated
+    """, (endpoint, sub["keys"]["p256dh"], sub["keys"]["auth"], now, now))
+    conn.commit()
+    conn.close()
 
 def remove_wsubs(endpoint: str):
-    _web_subscriptions.pop(endpoint, None)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM web_subscribers WHERE endpoint = ?", (endpoint,))
+    conn.commit()
+    conn.close()
 
 #############################################
 ## Telegram Subscribers (tsubs)
