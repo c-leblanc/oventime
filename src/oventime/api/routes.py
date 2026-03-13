@@ -1,13 +1,15 @@
 from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+import sqlite3
 import os
 
 
 from oventime.cache.cache import (
     get_status,get_fulldiag,get_nextwindow,
     add_wsubs,remove_wsubs,
-    get_tsubs,add_tsubs,remove_tsubs
+    get_tsubs,add_tsubs,remove_tsubs,
+    get_connection
 )
 
 from oventime.config import INTERNAL_API_TOKEN
@@ -121,6 +123,38 @@ def unsubscribe(chat_id: int, x_internal_token: str | None = Header(default=None
     _check_token(x_internal_token)
     remove_tsubs(chat_id)
     return {"status": "unsubscribed", "chat_id": chat_id}
+
+
+# ─────────────────────────────────────────────
+# Admin / debug
+
+@app.get("/admin/tables")
+def list_tables(x_internal_token: str | None = Header(default=None)):
+    """Liste toutes les tables de la base."""
+    _check_token(x_internal_token)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+    tables = [row[0] for row in cur.fetchall()]
+    conn.close()
+    return {"tables": tables}
+
+
+@app.get("/admin/tables/{table_name}")
+def view_table(table_name: str, x_internal_token: str | None = Header(default=None)):
+    """Retourne le contenu complet d'une table."""
+    _check_token(x_internal_token)
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(f"SELECT * FROM {table_name}")
+        columns = [desc[0] for desc in cur.description]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+    except sqlite3.OperationalError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    finally:
+        conn.close()
+    return {"table": table_name, "count": len(rows), "rows": rows}
 
 
 # ─────────────────────────────────────────────
