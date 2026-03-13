@@ -110,6 +110,7 @@ async def _notify_web(title: str, body: str):
                 vapid_claims=VAPID_CLAIMS,
                 content_encoding="aes128gcm",
             )
+            logger.info(f"Web push envoyé : {endpoint[:60]}…")
         except WebPushException as e:
             status = e.response.status_code if e.response else None
             if status in (404, 410):
