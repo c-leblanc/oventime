@@ -185,6 +185,19 @@ def get_nextwindow(target_time=None, tz_output=TIMEZONE):
         "nextwind_end": to_utc_timestamp(row[2]).tz_convert(tz_output)
     }
 
+#############################################
+## Web Subscribers (wsubs)
+
+_web_subscriptions: dict = {}
+
+def get_wsubs() -> dict:
+    return dict(_web_subscriptions)
+
+def add_wsubs(endpoint: str, sub: dict):
+    _web_subscriptions[endpoint] = sub
+
+def remove_wsubs(endpoint: str):
+    _web_subscriptions.pop(endpoint, None)
 
 #############################################
 ## Telegram Subscribers (tsubs)

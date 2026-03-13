@@ -8,7 +8,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", PROJECT_ROOT / "data"))
 
 
 ############################################
-# Tokens
+# Tokens & autres
 ############################################
 
 load_dotenv(PROJECT_ROOT / ".env")
@@ -24,6 +24,7 @@ COUNTRY_CODE = "FR" # Country code used by entsoe-py
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
+EMAIL = os.getenv("EMAIL","")
 
 ############################################
 # Parameters

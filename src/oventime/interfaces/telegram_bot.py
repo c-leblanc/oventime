@@ -1,15 +1,11 @@
 import logging
 from telegram.ext import ContextTypes
 import httpx
-import asyncio
+
+logger = logging.getLogger(__name__)
 
 from oventime.interfaces.messaging import msg_diagnostic, msg_price_window
-from oventime.config import (
-    LEAF_THRESHOLD, FIRE_THRESHOLD, WINDOW_METHOD, OTSU_SEVERITY,
-    API_BASE_URL, INTERNAL_API_TOKEN)
-
-logging.basicConfig(level=logging.INFO)
-
+from oventime.config import (API_BASE_URL, INTERNAL_API_TOKEN)
 
 async def now(update, context):
     """Répond avec le diagnostic actuel."""
@@ -58,7 +54,7 @@ async def start_auto(update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("⚠️ Erreur lors de l'inscription, réessaie plus tard.")
         return    
-    print(f"Telegram subscriber added: {chat_id}.")
+    logger.info(f"Telegram subscriber added: {chat_id}.")
     await update.message.reply_text("✅ ACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
 
 
@@ -74,7 +70,7 @@ async def stop_auto(update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("⚠️ Erreur lors de la désinscription, réessaie plus tard.")
         return 
-    print(f"Telegram subscriber deactivated: {chat_id}.")
+    logger.info(f"Telegram subscriber deactivated: {chat_id}.")
     await update.message.reply_text("❌ INACTIF: Alerte automatique en cas d'électricité verte abondante 🍃⚡ ou de forte tension sur le réseau 🔥🏭")
 
 

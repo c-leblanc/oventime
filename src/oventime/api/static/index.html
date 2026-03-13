@@ -222,6 +222,64 @@
       display: none;
       letter-spacing: 0.04em;
     }
+
+    /* ── Notification subscribe card ── */
+    .notif-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.1rem 1.4rem;
+      box-shadow: 0 2px 0 rgba(255,255,255,0.9) inset, 0 4px 20px var(--shadow);
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+    .notif-card.hidden { display: none; }
+    .notif-icon {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .notif-text { flex: 1; min-width: 0; }
+    .notif-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.15rem;
+    }
+    .notif-desc {
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .notif-btn {
+      flex-shrink: 0;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 0.4rem 0.9rem;
+      cursor: pointer;
+      border: 1px solid;
+      transition: background 0.2s, transform 0.1s, opacity 0.2s;
+      white-space: nowrap;
+    }
+    .notif-btn:hover  { transform: scale(1.04); }
+    .notif-btn:active { transform: scale(0.97); }
+    .notif-btn.subscribe {
+      color: #fff;
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+    .notif-btn.subscribe:hover { background: #e09510; border-color: #e09510; }
+    .notif-btn.unsubscribe {
+      color: var(--muted);
+      background: transparent;
+      border-color: var(--border);
+    }
+    .notif-btn.unsubscribe:hover { background: rgba(245,166,35,0.08); }
+    .notif-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
   </style>
 </head>
 <body>
@@ -279,6 +337,17 @@
       <span class="timestamp" id="timestamp">—</span>
       <button class="refresh-btn" onclick="fetchData()">↻ Actualiser</button>
     </div>
+
+    <!-- ── Notification subscribe card ── -->
+    <div class="notif-card hidden" id="notifCard" style="margin-top:0.9rem; margin-bottom:0">
+      <div class="notif-icon" id="notifIcon">🔔</div>
+      <div class="notif-text">
+        <div class="notif-title" id="notifTitle">Alertes réseau</div>
+        <div class="notif-desc" id="notifDesc">Sois notifié lors des périodes d'abondance 🍃 ou de forte tension 🔥</div>
+      </div>
+      <button class="notif-btn subscribe" id="notifBtn" onclick="toggleSubscription()">Activer</button>
+    </div>
+
     <div class="error-msg" id="errorMsg">
       Impossible de contacter l'API — données de démo affichées
     </div>
@@ -345,6 +414,151 @@
 
     fetchData()
     setInterval(fetchData, 5 * 60 * 1000)
+
+    // ══════════════════════════════════════════════════════════════════
+    // NOTIFICATIONS PUSH
+    // ══════════════════════════════════════════════════════════════════
+
+    let _swRegistration = null   // ServiceWorkerRegistration
+    let _vapidPublicKey  = null  // clé VAPID base64url
+
+    // Convertit une clé VAPID base64url en Uint8Array (requis par subscribe())
+    function urlBase64ToUint8Array(b64) {
+      const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, "=")
+      const raw = atob(padded.replace(/-/g, "+").replace(/_/g, "/"))
+      return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
+    }
+
+    // Récupère la subscription active (ou null)
+    async function getActiveSub() {
+      if (!_swRegistration) return null
+      return _swRegistration.pushManager.getSubscription()
+    }
+
+    // Met à jour l'UI de la carte selon l'état courant
+    function setNotifState(state) {
+      const card = $("notifCard")
+      const btn  = $("notifBtn")
+      const icon = $("notifIcon")
+      const title = $("notifTitle")
+      const desc  = $("notifDesc")
+
+      card.classList.remove("hidden")
+      btn.disabled = false
+
+      if (state === "unsupported") {
+        card.classList.add("hidden")
+        return
+      }
+      if (state === "denied") {
+        icon.textContent  = "🔕"
+        title.textContent = "Notifications bloquées"
+        desc.textContent  = "Active les notifications dans les réglages de ton navigateur."
+        btn.style.display = "none"
+        return
+      }
+      if (state === "subscribed") {
+        icon.textContent  = "🔔"
+        title.textContent = "Alertes activées"
+        desc.textContent  = "Tu recevras une notif en cas d'abondance 🍃 ou de forte tension 🔥"
+        btn.textContent   = "Désactiver"
+        btn.className     = "notif-btn unsubscribe"
+        btn.style.display = ""
+        return
+      }
+      // default: "unsubscribed"
+      icon.textContent  = "🔔"
+      title.textContent = "Alertes réseau"
+      desc.textContent  = "Sois notifié lors des périodes d'abondance 🍃 ou de forte tension 🔥"
+      btn.textContent   = "Activer"
+      btn.className     = "notif-btn subscribe"
+      btn.style.display = ""
+    }
+
+    // Initialise le Service Worker et lit l'état au chargement
+    async function initPush() {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        setNotifState("unsupported")
+        return
+      }
+
+      // Enregistre le Service Worker
+      try {
+        _swRegistration = await navigator.serviceWorker.register("/sw.js", { scope: "/" })
+      } catch (e) {
+        console.error("SW registration failed:", e)
+        setNotifState("unsupported")
+        return
+      }
+
+      // Récupère la clé VAPID publique depuis l'API
+      try {
+        const r = await fetch(`${API_URL}/vapid-public-key`)
+        const data = await r.json()
+        _vapidPublicKey = data.publicKey
+      } catch (e) {
+        console.error("Could not fetch VAPID public key:", e)
+        setNotifState("unsupported")
+        return
+      }
+
+      // Affiche le bon état
+      if (Notification.permission === "denied") {
+        setNotifState("denied")
+        return
+      }
+      const sub = await getActiveSub()
+      setNotifState(sub ? "subscribed" : "unsubscribed")
+    }
+
+    async function toggleSubscription() {
+      const btn = $("notifBtn")
+      btn.disabled = true
+      const sub = await getActiveSub()
+
+      if (sub) {
+        // ── Désabonnement ──
+        try {
+          await fetch(`${API_URL}/wsubs`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          })
+          await sub.unsubscribe()
+          setNotifState("unsubscribed")
+        } catch (e) {
+          console.error(e)
+          btn.disabled = false
+        }
+      } else {
+        // ── Abonnement ──
+        let permission = Notification.permission
+        if (permission === "default") {
+          permission = await Notification.requestPermission()
+        }
+        if (permission !== "granted") {
+          setNotifState("denied")
+          return
+        }
+        try {
+          const newSub = await _swRegistration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(_vapidPublicKey),
+          })
+          await fetch(`${API_URL}/wsubs`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newSub.toJSON()),
+          })
+          setNotifState("subscribed")
+        } catch (e) {
+          console.error(e)
+          btn.disabled = false
+        }
+      }
+    }
+
+    initPush()
   </script>
 </body>
 </html>

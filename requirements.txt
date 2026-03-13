@@ -9,5 +9,6 @@ pandas
 pyarrow
 python-dotenv
 python-telegram-bot
+pywebpush
 requests
 uvicorn
