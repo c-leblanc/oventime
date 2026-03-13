@@ -424,8 +424,8 @@
 
     // Convertit une clé VAPID base64url en Uint8Array (requis par subscribe())
     function urlBase64ToUint8Array(b64) {
-      const b64standard = b64.replace(/-/g, '+').replace(/_/g, '/')
-      const raw = atob(b64standard)
+      const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, "=")
+      const raw = atob(padded.replace(/-/g, "+").replace(/_/g, "/"))
       return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
     }
 
@@ -541,9 +541,13 @@
           return
         }
         try {
+          const keyArray = urlBase64ToUint8Array(_vapidPublicKey)
+          console.log('VAPID key:', _vapidPublicKey)
+          console.log('VAPID key length:', _vapidPublicKey?.length)
+          console.log('Key array length:', keyArray.length)
           const newSub = await _swRegistration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(_vapidPublicKey),
+            applicationServerKey: keyArray,
           })
           await fetch(`${API_URL}/wsubs`, {
             method: "POST",
