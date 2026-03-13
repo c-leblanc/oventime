@@ -484,7 +484,7 @@
 
       // Enregistre le Service Worker
       try {
-        _swRegistration = await navigator.serviceWorker.register("/sw.js", { scope: "/" })
+        _swRegistration = await navigator.serviceWorker.register(`/sw.js?appUrl=${encodeURIComponent(API_URL)}`, { scope: "/" })
       } catch (e) {
         console.error("SW registration failed:", e)
         setNotifState("unsupported")

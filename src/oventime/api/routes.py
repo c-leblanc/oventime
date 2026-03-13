@@ -6,7 +6,7 @@ import os
 
 from oventime.cache.cache import (
     get_status,get_fulldiag,get_nextwindow,
-    get_wsubs,add_wsubs,remove_wsubs,
+    add_wsubs,remove_wsubs,
     get_tsubs,add_tsubs,remove_tsubs
 )
 
@@ -72,11 +72,12 @@ def next_window(time: str = None):
 
 # ─────────────────────────────────────────────
 # Web Push subscribers
-
+ 
 @app.get("/vapid-public-key")
 def vapid_public_key():
     return {"publicKey": os.environ["VAPID_PUBLIC_KEY"]}
-
+ 
+ 
 @app.post("/wsubs", status_code=201)
 async def add_web_subscription(request: Request):
     body = await request.json()
@@ -85,22 +86,15 @@ async def add_web_subscription(request: Request):
         raise HTTPException(status_code=400, detail="Subscription invalide")
     add_wsubs(endpoint, body)
     return {"status": "subscribed"}
-
+ 
+ 
 @app.delete("/wsubs", status_code=200)
 async def remove_web_subscription(request: Request):
     body = await request.json()
     remove_wsubs(body.get("endpoint", ""))
     return {"status": "unsubscribed"}
-
-class NotifyRequest(BaseModel):
-    title: str
-    body: str
-
-@app.post("/wsubs/notify", status_code=200)
-async def notify_web(payload: NotifyRequest, x_internal_token: str | None = Header(default=None)):
-    _check_token(x_internal_token)
-    await _send_to_all_wsubs(payload.title, payload.body)
-    return {"status": "sent"}
+ 
+ 
 
 # ─────────────────────────────────────────────
 # Telegram subscribers
@@ -132,8 +126,11 @@ def unsubscribe(chat_id: int, x_internal_token: str | None = Header(default=None
 # ─────────────────────────────────────────────
 
 
-
 app.mount("/static", StaticFiles(directory="src/oventime/api/static"), name="static")
+
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse("src/oventime/api/static/sw.js", media_type="application/javascript")
 
 @app.get("/")
 def index():

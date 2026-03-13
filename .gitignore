@@ -7,6 +7,10 @@ env/
 .env
 *.env
 
+# --- Clés VAPID ---
+private_key.pem
+public_key.pem
+
 # --- Python ---
 __pycache__/
 *.pyc

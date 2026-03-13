@@ -1,11 +1,11 @@
 // sw.js — Service Worker OvenTime
-// À placer à la racine du site (servi par FastAPI sous /sw.js)
 
-const APP_URL = "https://oventime.up.railway.app";
+const APP_URL = new URL(self.location.href).searchParams.get("appUrl")
+             ?? "https://oventime.up.railway.app";
 
 // ── Réception d'un push ──────────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
-  let payload = { title: "OvenTime", body: "Alerte réseau électrique", tag: "oventime", score: null };
+  let payload = { title: "OvenTime", body: "Alerte réseau électrique", tag: "oventime" };
 
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
@@ -15,8 +15,8 @@ self.addEventListener("push", (event) => {
     body:      payload.body,
     icon:      "/static/logo.png",
     badge:     "/static/logo.png",
-    tag:       payload.tag,        // remplace la notif précédente du même tag
-    renotify:  true,               // vibre quand même si même tag
+    tag:       payload.tag,
+    renotify:  true,
     data:      { url: APP_URL },
     actions: [
       { action: "open",    title: "Voir le réseau" },
@@ -37,7 +37,6 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((list) => {
-        // Réutilise un onglet déjà ouvert s'il existe
         for (const client of list) {
           if (client.url.startsWith(APP_URL) && "focus" in client) {
             return client.focus();
