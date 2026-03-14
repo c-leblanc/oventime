@@ -1,9 +1,11 @@
+import logging
 from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import sqlite3
 import os
 
+logger = logging.getLogger(__name__)
 
 from oventime.cache.cache import (
     get_status,get_fulldiag,get_nextwindow,
@@ -87,11 +89,16 @@ async def add_web_subscription(request: Request):
     if not endpoint or "keys" not in body:
         raise HTTPException(status_code=400, detail="Subscription invalide")
     add_wsubs(endpoint, body)
-    await _notify_web(
-        title="OvenTime ⚡",
-        body="✅ Alertes activées — tu recevras une notif en cas d'abondance 🍃 ou de forte tension 🔥",
-        subs_override={endpoint: body}
-    )
+    add_wsubs(endpoint, body)
+    try:
+        await _notify_web(
+            title="OvenTime ⚡",
+            body="✅ Alertes activées — tu recevras une notif en cas d'abondance 🍃 ou de forte tension 🔥",
+            subs_override={endpoint: body}
+        )
+    except Exception as e:
+        logger.error(f"Erreur notif confirmation: {e!r}")
+    return {"status": "subscribed"}
     return {"status": "subscribed"}
  
 @app.delete("/wsubs", status_code=200)
