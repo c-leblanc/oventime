@@ -120,5 +120,7 @@ async def _notify_web(title: str, body: str, subs_override: dict = None):
                 logger.info(f"Web push subscription expirée ({status}): {endpoint[:60]}…")
             else:
                 logger.error(f"Erreur web push {status}: {e!r}")
+        except Exception as e:
+            logger.error(f"Erreur inattendue web push: {e!r}")
     for ep in to_remove:
         remove_wsubs(ep)
