@@ -24,7 +24,15 @@ COUNTRY_CODE = "FR" # Country code used by entsoe-py
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN","")
 
-VAPID_PRIVATE_KEY  = os.getenv("VAPID_PRIVATE_KEY")
+_raw = os.getenv("VAPID_PRIVATE_KEY")
+# Railway met tout sur une ligne, on reconstruit le PEM
+if "-----" in _raw and "\n" not in _raw:
+    parts = _raw.split("-----")
+    # parts = ['', 'BEGIN EC PRIVATE KEY', ' MHc...Zg== ', 'END EC PRIVATE KEY', '']
+    VAPID_PRIVATE_KEY = f"-----{parts[1]}-----\n{parts[2].strip()}\n-----{parts[3]}-----\n"
+else:
+    VAPID_PRIVATE_KEY = _raw
+
 VAPID_PUBLIC_KEY   = os.getenv("VAPID_PUBLIC_KEY")
 
 EMAIL = os.getenv("EMAIL","")
