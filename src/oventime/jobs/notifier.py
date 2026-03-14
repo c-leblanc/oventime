@@ -102,8 +102,7 @@ async def _notify_web(title: str, body: str):
     payload = json.dumps({"title": title, "body": body, "tag": "oventime-alert"})
     to_remove = []
     for endpoint, sub in subs.items():
-        logger.info(f"VAPID_PRIVATE_KEY repr: {repr(VAPID_PRIVATE_KEY[:50])}")
-        vapid = Vapid.from_pem(VAPID_PRIVATE_KEY.encode())
+        vapid = Vapid.from_string(VAPID_PRIVATE_KEY)
         try:
             webpush(
                 subscription_info=sub,
