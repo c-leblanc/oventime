@@ -99,6 +99,15 @@ async def remove_web_subscription(request: Request):
     remove_wsubs(body.get("endpoint", ""))
     return {"status": "unsubscribed"}
  
+
+@app.delete("/admin/wsubs/all")
+def clear_all_wsubs(x_internal_token: str | None = Header(default=None)):
+    _check_token(x_internal_token)
+    conn = get_connection()
+    conn.execute("DELETE FROM web_subscribers")
+    conn.commit()
+    conn.close()
+    return {"status": "cleared"}
  
 
 # ─────────────────────────────────────────────
