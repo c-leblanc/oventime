@@ -28,8 +28,9 @@ _raw = os.getenv("VAPID_PRIVATE_KEY")
 # Railway met tout sur une ligne, on reconstruit le PEM
 if "-----" in _raw and "\n" not in _raw:
     parts = _raw.split("-----")
-    # parts = ['', 'BEGIN EC PRIVATE KEY', ' MHc...Zg== ', 'END EC PRIVATE KEY', '']
-    VAPID_PRIVATE_KEY = f"-----{parts[1]}-----\n{parts[2].strip()}\n-----{parts[3]}-----\n"
+    body = parts[2].strip().replace(" ", "")
+    body = "\n".join(body[i:i+64] for i in range(0, len(body), 64))
+    VAPID_PRIVATE_KEY = f"-----{parts[1]}-----\n{body}\n-----{parts[3]}-----\n"
 else:
     VAPID_PRIVATE_KEY = _raw
 
