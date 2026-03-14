@@ -89,7 +89,8 @@ async def add_web_subscription(request: Request):
     add_wsubs(endpoint, body)
     await _notify_web(
         title="OvenTime ⚡",
-        body="✅ Alertes activées — tu recevras une notif en cas d'abondance 🍃 ou de forte tension 🔥"
+        body="✅ Alertes activées — tu recevras une notif en cas d'abondance 🍃 ou de forte tension 🔥",
+        subs_override={endpoint: body}
     )
     return {"status": "subscribed"}
  

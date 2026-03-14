@@ -92,9 +92,10 @@ async def _notify_telegram(text: str):
 
 # ── Envoi Web Push ────────────────────────────────────────────────────────────
 
-async def _notify_web(title: str, body: str):
-    subs = get_wsubs()
+async def _notify_web(title: str, body: str, subs_override: dict = None):
+    subs = subs_override if subs_override is not None else get_wsubs()
     if not subs:
+        logger.info("Aucun abonné web push.")
         return
     if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
         logger.error("Clés VAPID non configurées, web push ignoré.")
