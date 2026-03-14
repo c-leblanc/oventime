@@ -11,7 +11,7 @@ from oventime.cache.cache import (
     get_tsubs,add_tsubs,remove_tsubs,
     get_connection
 )
-
+from oventime.jobs.notifier import _notify_web
 from oventime.config import INTERNAL_API_TOKEN
 
 
@@ -87,8 +87,11 @@ async def add_web_subscription(request: Request):
     if not endpoint or "keys" not in body:
         raise HTTPException(status_code=400, detail="Subscription invalide")
     add_wsubs(endpoint, body)
+    await _notify_web(
+        title="OvenTime ⚡",
+        body="✅ Alertes activées — tu recevras une notif en cas d'abondance 🍃 ou de forte tension 🔥"
+    )
     return {"status": "subscribed"}
- 
  
 @app.delete("/wsubs", status_code=200)
 async def remove_web_subscription(request: Request):
