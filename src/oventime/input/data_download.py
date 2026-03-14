@@ -308,9 +308,3 @@ def should_update_eco2mix(
     now = pd.Timestamp.now(tz="UTC")
     return last_timestamp < (now - pd.Timedelta(minutes=freq_update_eco2mix))
 
-
-
-if __name__ == "__main__":
-    #print(should_update_prices())
-    print(update_eco2mix_data())
-    print(update_price_data())

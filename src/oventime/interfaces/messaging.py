@@ -95,7 +95,3 @@ def msg_price_window(
 
     return text
 
-if __name__ == "__main__":
-    print(msg_diagnostic("17:45"))
-    #print(msg_price_window())
-

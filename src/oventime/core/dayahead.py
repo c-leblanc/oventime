@@ -170,6 +170,3 @@ def output(# pour ajouter d'autres outputs plus tard, et tout renvoyer au cache 
     }
 
 
-
-if __name__ == "__main__":
-    print(price_window())

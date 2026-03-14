@@ -12,7 +12,7 @@ from oventime.cache.cache import (
     get_connection
 )
 from oventime.jobs.notifier import _notify_web
-from oventime.config import INTERNAL_API_TOKEN
+from oventime.config import INTERNAL_API_TOKEN, VAPID_PUBLIC_KEY
 
 
 app = FastAPI(
@@ -77,7 +77,7 @@ def next_window(time: str = None):
  
 @app.get("/vapid-public-key")
 def vapid_public_key():
-    return {"publicKey": os.environ["VAPID_PUBLIC_KEY"]}
+    return {"publicKey": VAPID_PUBLIC_KEY}
  
  
 @app.post("/wsubs", status_code=201)
