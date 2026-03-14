@@ -8,7 +8,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", PROJECT_ROOT / "data"))
 
 
 ############################################
-# Tokens
+# Tokens & autres
 ############################################
 
 load_dotenv(PROJECT_ROOT / ".env")
@@ -22,8 +22,12 @@ INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN")
 ENTSOE_API_KEY = os.getenv("ENTSOE_API_KEY")
 COUNTRY_CODE = "FR" # Country code used by entsoe-py
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN","")
 
+VAPID_PRIVATE_KEY  = os.getenv("VAPID_PRIVATE_KEY")
+VAPID_PUBLIC_KEY   = os.getenv("VAPID_PUBLIC_KEY")
+
+EMAIL = os.getenv("EMAIL","")
 
 ############################################
 # Parameters

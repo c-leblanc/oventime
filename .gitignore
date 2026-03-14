@@ -8,6 +8,9 @@ env/
 *.env
 *.pem
 
+# --- Clés ---
+*.pem
+
 # --- Python ---
 __pycache__/
 *.pyc

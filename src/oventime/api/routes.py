@@ -1,14 +1,15 @@
-from fastapi import FastAPI, HTTPException, Header
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Header, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+import sqlite3
+import os
+
 
 from oventime.cache.cache import (
-    get_status,
-    get_fulldiag,
-    get_nextwindow,
-    get_tsubs,
-    add_tsubs,
-    remove_tsubs
+    get_status,get_fulldiag,get_nextwindow,
+    add_wsubs,remove_wsubs,
+    get_tsubs,add_tsubs,remove_tsubs,
+    get_connection
 )
 
 from oventime.config import INTERNAL_API_TOKEN
@@ -24,7 +25,6 @@ app = FastAPI(
 def _check_token(token: str | None):
     if not INTERNAL_API_TOKEN or token != INTERNAL_API_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized")
-
 
 
 @app.get("/status")
@@ -73,6 +73,32 @@ def next_window(time: str = None):
     return res
 
 # ─────────────────────────────────────────────
+# Web Push subscribers
+ 
+@app.get("/vapid-public-key")
+def vapid_public_key():
+    return {"publicKey": os.environ["VAPID_PUBLIC_KEY"]}
+ 
+ 
+@app.post("/wsubs", status_code=201)
+async def add_web_subscription(request: Request):
+    body = await request.json()
+    endpoint = body.get("endpoint")
+    if not endpoint or "keys" not in body:
+        raise HTTPException(status_code=400, detail="Subscription invalide")
+    add_wsubs(endpoint, body)
+    return {"status": "subscribed"}
+ 
+ 
+@app.delete("/wsubs", status_code=200)
+async def remove_web_subscription(request: Request):
+    body = await request.json()
+    remove_wsubs(body.get("endpoint", ""))
+    return {"status": "unsubscribed"}
+ 
+ 
+
+# ─────────────────────────────────────────────
 # Telegram subscribers
 
 @app.get("/tsubs")
@@ -100,10 +126,45 @@ def unsubscribe(chat_id: int, x_internal_token: str | None = Header(default=None
 
 
 # ─────────────────────────────────────────────
+# Admin / debug
 
+@app.get("/admin/tables")
+def list_tables(x_internal_token: str | None = Header(default=None)):
+    """Liste toutes les tables de la base."""
+    _check_token(x_internal_token)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+    tables = [row[0] for row in cur.fetchall()]
+    conn.close()
+    return {"tables": tables}
+
+
+@app.get("/admin/tables/{table_name}")
+def view_table(table_name: str, x_internal_token: str | None = Header(default=None)):
+    """Retourne le contenu complet d'une table."""
+    _check_token(x_internal_token)
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(f"SELECT * FROM {table_name}")
+        columns = [desc[0] for desc in cur.description]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+    except sqlite3.OperationalError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    finally:
+        conn.close()
+    return {"table": table_name, "count": len(rows), "rows": rows}
+
+
+# ─────────────────────────────────────────────
 
 
 app.mount("/static", StaticFiles(directory="src/oventime/api/static"), name="static")
+
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse("src/oventime/api/static/sw.js", media_type="application/javascript")
 
 @app.get("/")
 def index():
