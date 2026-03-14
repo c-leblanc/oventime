@@ -1,7 +1,8 @@
 // sw.js — Service Worker OvenTime
 
-const APP_URL = new URL(self.location.href).searchParams.get("appUrl")
-             ?? "https://oventime.up.railway.app";
+const params = new URL(self.location.href).searchParams;
+const paramAppUrl = params.get("appUrl");
+const APP_URL = (paramAppUrl && paramAppUrl.trim()) ? paramAppUrl : (self.registration?.scope || self.location.origin);
 
 // ── Réception d'un push ──────────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
