@@ -114,7 +114,7 @@ async def _notify_web(title: str, body: str):
             logger.info(f"Web push envoyé : {endpoint[:60]}…")
         except WebPushException as e:
             status = e.response.status_code if e.response else None
-            if status in (404, 410):
+            if status in (403, 404, 410):
                 to_remove.append(endpoint)
                 logger.info(f"Web push subscription expirée ({status}): {endpoint[:60]}…")
             else:
