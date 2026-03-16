@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from oventime.cache.cache import get_fulldiag, get_tsubs, get_wsubs, remove_wsubs
 from oventime.config import LEAF_THRESHOLD, FIRE_THRESHOLD, EMAIL, TELEGRAM_TOKEN, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY
+from oventime.utils import to_utc_timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,8 @@ async def check_and_notify():
         return
     _last_seen_ts = ts
 
+    time = to_utc_timestamp(ts).strftime("%H:%M")
+
     title = None
     text = None
 
@@ -54,7 +57,7 @@ async def check_and_notify():
         title = "🍃⚡ ABONDANCE ⚡🍃"
         text = (
             "Il y a un surplus d'électricité décarbonée sur le réseau !\n"
-            f"(Score : {score:.0f}, /m pour plus d'infos)"
+            f"(Score à {time} = {score:.0f})"
         )
         _last_alert_high = True
 
@@ -62,7 +65,7 @@ async def check_and_notify():
         title = "🔥🏭 FORTE TENSION 🔥🏭"
         text = (
             "L'électricité se fait rare et on a démarré les centrales les plus polluantes !\n"
-            f"(Score : {score:.0f}, /m pour plus d'infos)"
+            f"(Score à {time} = {score:.0f})"
         )
         _last_alert_low = True
 
