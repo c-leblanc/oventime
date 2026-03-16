@@ -68,7 +68,7 @@ async def check_and_notify():
 
     logger.info(f"Alerte déclenchée : {text[:50]}…")
     await _notify_telegram(text)
-    await _notify_web(title="OvenTime ⚡", body=text)
+    await _notify_web(body=text)
 
 
 # ── Envoi Telegram ────────────────────────────────────────────────────────────
