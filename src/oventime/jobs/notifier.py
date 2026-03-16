@@ -3,6 +3,7 @@ import json
 import httpx
 from pywebpush import webpush, WebPushException
 from py_vapid import Vapid
+from urllib.parse import urlparse
 
 from oventime.cache.cache import get_fulldiag, get_tsubs, get_wsubs, remove_wsubs
 from oventime.config import LEAF_THRESHOLD, FIRE_THRESHOLD, EMAIL, TELEGRAM_TOKEN, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY
@@ -104,12 +105,14 @@ async def _notify_web(title: str, body: str, subs_override: dict = None):
     to_remove = []
     for endpoint, sub in subs.items():
         vapid = Vapid.from_string(VAPID_PRIVATE_KEY)
+        parsed = urlparse(endpoint)
+        claims = {"sub": f"mailto:{EMAIL}", "aud": f"{parsed.scheme}://{parsed.netloc}"}
         try:
             webpush(
                 subscription_info=sub,
                 data=payload,
                 vapid_private_key=vapid,
-                vapid_claims=VAPID_CLAIMS,
+                vapid_claims=claims,
                 content_encoding="aes128gcm",
             )
             logger.info(f"Web push envoyé : {endpoint[:60]}…")
