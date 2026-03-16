@@ -93,7 +93,7 @@ async def _notify_telegram(text: str):
 
 # ── Envoi Web Push ────────────────────────────────────────────────────────────
 
-async def _notify_web(title: str, body: str, subs_override: dict = None):
+async def _notify_web(title: str = None, body: str = None, subs_override: dict = None):
     subs = subs_override if subs_override is not None else get_wsubs()
     if not subs:
         logger.info("Aucun abonné web push.")
