@@ -73,7 +73,7 @@ async def check_and_notify():
         return
 
     logger.info(f"Alerte déclenchée : {text[:50]}…")
-    await _notify_telegram(text)
+    await _notify_telegram(f"{title}\n{text} -- \m pour plus d'info")
     await _notify_web(title=title, body=text)
 
 
