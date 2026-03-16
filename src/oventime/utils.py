@@ -138,10 +138,13 @@ def to_utc_timestamp(
     )
 
 
-def trim_trailing_nans(df : pd.DataFrame) -> pd.DataFrame:
+def trim_trailing_nans(df: pd.DataFrame, cols: list = None) -> pd.DataFrame:
     """
     Removes rows with missing values at the end of a data frame.
+    If cols is specified, only checks those columns for NaN.
     """
-    while len(df) > 0 and df.iloc[-1].isna().any():
+    check = df[cols] if cols is not None else df
+    while len(df) > 0 and check.iloc[-1].isna().any():
         df = df.iloc[:-1]
+        check = check.iloc[:-1]
     return df

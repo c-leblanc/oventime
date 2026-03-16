@@ -12,6 +12,16 @@ logger = logging.getLogger(__name__)
 
 ECO2MIX_URL = "https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-national-tr/records"
 
+COLS_TRIM = [
+    "eolien", "solaire", "hydraulique_fil_eau_eclusee",  # → RENEWABLE
+    "nucleaire",                                           # → NUCLEAR
+    "hydraulique_lacs", "hydraulique_step_turbinage",     # → STORAGE
+    "pompage", "destockage_batterie", "stockage_batterie",# → STORAGE
+    "gaz_ccg",                                            # → GAS_CCG
+    "gaz_tac",                                            # → GAS_TAC
+    "charbon", "gaz_autres", "fioul_tac", "fioul_autres", # → OTHER
+    "gaz_cogen", "fioul_cogen", "bioenergies",            # → OTHER
+]
 
 def eco2mix_raw(start, end, limit=100, vars=None):
     where = f"date_heure:['{start}' TO '{end}']"
@@ -87,7 +97,7 @@ def update_eco2mix_data(
     eco2mix_file = raw_dir / "eco2mix.parquet"
     if eco2mix_file.exists():
         local = pd.read_parquet(eco2mix_file)
-        local = trim_trailing_nans(local)
+        local = trim_trailing_nans(local, cols = COLS_TRIM)
         if len(local) == 0:
             last_timestamp = None
             logger.info("Local data - None left after trimming")
@@ -158,7 +168,7 @@ def update_eco2mix_data(
     logger.info("Update completed.")
 
     # 6. Return the last timestamp with complete data
-    combined = trim_trailing_nans(combined)
+    combined = trim_trailing_nans(combined, cols=COLS_TRIM)
     last_timestamp = combined.index.max()
     return(last_timestamp)
 
@@ -283,7 +293,7 @@ def last_ts_eco2mix():
         return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
     # Load and remove final rows with missing data
     eco2mix = pd.read_parquet(eco2mix_file)
-    eco2mix = trim_trailing_nans(eco2mix)
+    eco2mix = trim_trailing_nans(eco2mix, cols=COLS_TRIM)
     # Return last timestamp (or default if no rows left) 
     if len(eco2mix) == 0:
         return pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=RETENTION_DAYS)
