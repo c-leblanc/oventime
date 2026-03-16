@@ -37,27 +37,30 @@ async def check_and_notify():
         return
     _last_seen_ts = ts
 
+    title = None
     text = None
 
     if score <= LEAF_THRESHOLD and _last_alert_high:
-        text = "❌ Fin de la période d'abondance ⚡🍃"
+        title = "❌ Retour à la normale"
+        text = "Fin de la période d'abondance ⚡🍃"
         _last_alert_high = False
 
     elif score >= FIRE_THRESHOLD and _last_alert_low:
-        text = "✅ Fin de la période de forte tension 🔥🏭"
+        title = "✅ Retour à la normale"
+        text = "Fin de la période de forte tension 🔥🏭"
         _last_alert_low = False
 
     elif score > LEAF_THRESHOLD and not _last_alert_high:
+        title = "🍃⚡ ABONDANCE ⚡🍃"
         text = (
-            "🍃⚡ ABONDANCE ⚡🍃\n"
             "Il y a un surplus d'électricité décarbonée sur le réseau !\n"
             f"(Score : {score:.0f}, /m pour plus d'infos)"
         )
         _last_alert_high = True
 
     elif score < FIRE_THRESHOLD and not _last_alert_low:
+        title = "🔥🏭 FORTE TENSION 🔥🏭"
         text = (
-            "🔥🏭 FORTE TENSION 🔥🏭\n"
             "L'électricité se fait rare et on a démarré les centrales les plus polluantes !\n"
             f"(Score : {score:.0f}, /m pour plus d'infos)"
         )
@@ -68,7 +71,7 @@ async def check_and_notify():
 
     logger.info(f"Alerte déclenchée : {text[:50]}…")
     await _notify_telegram(text)
-    await _notify_web(body=text)
+    await _notify_web(title=title, body=text)
 
 
 # ── Envoi Telegram ────────────────────────────────────────────────────────────
