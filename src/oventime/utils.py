@@ -13,7 +13,7 @@ def time_interpreter(time_str, tz=TIMEZONE, freq="15min"):
     - localise en 'tz' si naive, convertit en UTC
     """
     if time_str is None:
-        return None
+        return None # Important passthrough (no time argument can mean now)
 
     try:
         # If already a Timestamp / datetime, normalize directly

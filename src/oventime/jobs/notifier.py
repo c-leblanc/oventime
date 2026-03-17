@@ -72,7 +72,7 @@ class Notifier:
             return
 
         logger.info(f"Alerte déclenchée : {text[:50]}…")
-        await self._notify_telegram(f"{title}\n{text} -- \m pour plus d'info")
+        await self._notify_telegram(f"{title}\n{text} -- \\m pour plus d'info")
         await self._notify_web(title=title, body=text)
 
     # ── Envoi Telegram ────────────────────────────────────────────────────────────
