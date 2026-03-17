@@ -13,8 +13,10 @@ from oventime.cache.cache import (
     get_tsubs,add_tsubs,remove_tsubs,
     get_connection
 )
-from oventime.jobs.notifier import _notify_web
+from oventime.jobs.notifier import notifier
 from oventime.config import INTERNAL_API_TOKEN, VAPID_PUBLIC_KEY
+
+ALLOWED_TABLES = {"cache", "subscribers", "web_subscribers"}
 
 
 app = FastAPI(
@@ -89,16 +91,14 @@ async def add_web_subscription(request: Request):
     if not endpoint or "keys" not in body:
         raise HTTPException(status_code=400, detail="Subscription invalide")
     add_wsubs(endpoint, body)
-    add_wsubs(endpoint, body)
     try:
-        await _notify_web(
+        await notifier._notify_web(
             title="OvenTime ⚡",
             body="✅ Alertes activées — tu recevras une notif en cas d'abondance 🍃 ou de forte tension 🔥",
             subs_override={endpoint: body}
         )
     except Exception as e:
         logger.error(f"Erreur notif confirmation: {e!r}")
-    return {"status": "subscribed"}
     return {"status": "subscribed"}
  
 @app.delete("/wsubs", status_code=200)
@@ -164,6 +164,8 @@ def list_tables(x_internal_token: str | None = Header(default=None)):
 def view_table(table_name: str, x_internal_token: str | None = Header(default=None)):
     """Retourne le contenu complet d'une table."""
     _check_token(x_internal_token)
+    if table_name not in ALLOWED_TABLES:
+        raise HTTPException(status_code=404, detail="Table inconnue")
     conn = get_connection()
     cur = conn.cursor()
     try:

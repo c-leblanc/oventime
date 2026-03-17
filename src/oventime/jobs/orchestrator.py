@@ -10,7 +10,7 @@ from oventime.input.data_download import (
     last_ts_eco2mix, last_ts_prices
 )
 from oventime.jobs.updates import update_cache_curr
-from oventime.jobs.notifier import check_and_notify
+from oventime.jobs.notifier import notifier
 from oventime.config import FREQ_UPDATE
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ async def orchestrator_loop(freq=FREQ_UPDATE):
 
         # --- D. alertes ---
         try:
-            await check_and_notify()
+            await notifier.check_and_notify()
         except Exception as e:
             logger.error(f"Erreur alertes: {e!r}")
 

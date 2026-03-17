@@ -1,21 +1,21 @@
-import requests
+import httpx
 import pandas as pd
 
-from oventime.utils import time_interpreter, to_utc_timestamp, to_epoch
-from oventime.config import TIMEZONE, API_BASE_URL
-
+from oventime.utils import time_interpreter, to_utc_timestamp
+from oventime.config import (
+    TIMEZONE, API_BASE_URL,
+    LEAF_THRESHOLD, GREEN_ORANGE_THRESHOLD, ORANGE_RED_THRESHOLD, FIRE_THRESHOLD
+)
 
 
 def concl_from_score(score: float) -> str:
-    if score > 100:
+    if score > LEAF_THRESHOLD:
         return "🍃🍃🍃 A FOND!\nY a de l'électricité à ne savoir qu'en faire."
-    if score > 85:
-        return "🟢 VAS-Y\nOn fait très peu appel aux centrales gaz."
-    if score > 70:
+    if score > GREEN_ORANGE_THRESHOLD:
         return "🟢 CA VA\nOn tire un peu sur le gaz, mais modérément."
-    if score > 30:
+    if score > ORANGE_RED_THRESHOLD:
         return "🟠 UN PEU TENDU\nC'est pas le pire, mais on tire un peu sur le gaz quand même."
-    if score > 0:
+    if score > FIRE_THRESHOLD:
         return "🔴 PAS MAINTENANT\nLe système est tendu et les centrales gaz tournent à fond."
     return "🔥🔥🔥 PIRE MOMENT!\nLe système est très tendu, on a démarré les centrales les plus polluantes."
 
@@ -25,7 +25,7 @@ def msg_diagnostic(
         ):
     
     target_time = time_interpreter(at_time)
-    r = requests.get(
+    r = httpx.get(
         f"{API_BASE_URL}/diagnostic",
         params={"time": target_time},
         timeout=2
@@ -60,7 +60,7 @@ def msg_price_window(
     """
     Renvoie un message texte décrivant la prochaine bonne fenêtre de prix bas.
     """
-    r = requests.get(
+    r = httpx.get(
         f"{API_BASE_URL}/next/window",
         timeout=2
         )

@@ -1,4 +1,4 @@
-import requests
+import httpx
 import logging
 from datetime import timedelta
 import pandas as pd
@@ -36,7 +36,7 @@ def eco2mix_raw(start, end, limit=100, vars=None):
         select_cols = ["date_heure"] + list(vars)
         params["select"] = ",".join(select_cols)
 
-    resp = requests.get(ECO2MIX_URL, params=params, timeout=10)
+    resp = httpx.get(ECO2MIX_URL, params=params, timeout=10)
     resp.raise_for_status()
     return resp.json()["results"]
 

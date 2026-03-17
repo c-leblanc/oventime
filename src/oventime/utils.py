@@ -47,7 +47,7 @@ def time_interpreter(time_str, tz=TIMEZONE, freq="15min"):
         ts_utc = ts.tz_convert("UTC").floor(freq)
         return ts_utc
 
-    except Exception:
+    except ValueError:
         raise ValueError(
             f"Format d'heure invalide : {time_str}\nExemples valides : 9, 9am, 21:30, hier 9am, 25/12 14h, ..."
         )
@@ -76,7 +76,7 @@ def to_epoch(target_time: Union[int, float, str, pd.Timestamp]) -> int:
         # 1️⃣ Parser robuste (ISO + quasi tout le reste)
         try:
             target_time = pd.to_datetime(target_time, utc=True)
-        except Exception:
+        except ValueError:
             # 2️⃣ Langage naturel
             target_time = time_interpreter(target_time)
 
@@ -123,12 +123,11 @@ def to_utc_timestamp(
             return target_time
 
     # 3. String
-    # String
     if isinstance(target_time, str):
         # 1️⃣ Parser robuste (ISO + quasi tout le reste)
         try:
             return pd.to_datetime(target_time, utc=True)
-        except Exception:
+        except ValueError:
             # 2️⃣ Langage naturel
             return time_interpreter(target_time)
 
