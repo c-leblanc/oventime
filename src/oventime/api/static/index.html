@@ -91,6 +91,8 @@
       0%, 100% { opacity: 1; transform: scale(1); }
       50%       { opacity: 0.45; transform: scale(0.75); }
     }
+
+    /* ── Carte principale : verdict ── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -99,61 +101,29 @@
       box-shadow: 0 2px 0 rgba(255,255,255,0.9) inset, 0 4px 20px var(--shadow);
       margin-bottom: 0.9rem;
     }
-    .status-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1.25rem;
-      border-bottom: 1px solid var(--border);
+    .verdict {
+      text-align: center;
+      padding: 0.5rem 0 1.2rem;
     }
-    .status-label {
-      font-size: 0.68rem;
-      font-family: 'DM Mono', monospace;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--accent);
-      background: rgba(82, 201, 126, 0.12);
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      transition: color 0.8s, background 0.8s;
-    }
-    .score-section { margin-bottom: 1.5rem; }
-    .score-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 0.7rem;
-    }
-    .score-value {
-      font-family: 'DM Mono', monospace;
-      font-size: 3rem;
-      font-weight: 500;
-      line-height: 1;
+    .verdict-status {
+      font-size: 1.6rem;
+      font-weight: 800;
       color: var(--accent);
       transition: color 0.8s;
+      margin-bottom: 0.3rem;
     }
-    .score-right { text-align: right; }
-    .score-unit {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-    }
-    .score-label {
-      font-size: 0.7rem;
+    .verdict-hint {
+      font-size: 0.82rem;
       color: var(--muted);
       font-weight: 600;
     }
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
     .bar-track {
+      flex: 1;
       height: 6px;
       background: var(--border);
       border-radius: 6px;
@@ -165,30 +135,73 @@
       background: linear-gradient(90deg, var(--accent), #ffe082);
       transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background 0.8s;
     }
-    .details {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.6rem;
+    .score-small {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      white-space: nowrap;
     }
-    .detail-cell {
-      background: rgba(245,166,35,0.06);
+
+    /* ── Carte forward : fenêtre + timeline ── */
+    .forward-card {
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 0.75rem 0.9rem;
+      border-radius: 20px;
+      padding: 1.4rem 1.4rem 1.1rem;
+      box-shadow: 0 2px 0 rgba(255,255,255,0.9) inset, 0 4px 20px var(--shadow);
+      margin-bottom: 0.9rem;
     }
-    .detail-key {
+    .forward-section-label {
       font-size: 0.62rem;
       font-family: 'DM Mono', monospace;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.35rem;
     }
-    .detail-val {
-      font-size: 1.05rem;
+    .forward-window {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+    .timeline-bar { display: flex; height: 22px; gap: 2px; align-items: flex-end; }
+    .timeline-bar > div { flex: 1; min-width: 2px; border-radius: 2px; height: 100%; cursor: default; }
+    .timeline-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      font-family: 'DM Mono', monospace;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Détails techniques (ligne discrète) ── */
+    .tech-strip {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      padding: 0.5rem 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .tech-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .tech-label {
+      font-size: 0.58rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tech-val {
+      font-size: 0.72rem;
       font-weight: 700;
       color: var(--text);
     }
+
     .footer {
       display: flex;
       justify-content: space-between;
@@ -238,23 +251,10 @@
       gap: 0.9rem;
     }
     .notif-card.hidden { display: none; }
-    .notif-icon {
-      font-size: 1.6rem;
-      flex-shrink: 0;
-      line-height: 1;
-    }
+    .notif-icon { font-size: 1.6rem; flex-shrink: 0; line-height: 1; }
     .notif-text { flex: 1; min-width: 0; }
-    .notif-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 0.15rem;
-    }
-    .notif-desc {
-      font-size: 0.68rem;
-      color: var(--muted);
-      line-height: 1.4;
-    }
+    .notif-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 0.15rem; }
+    .notif-desc { font-size: 0.68rem; color: var(--muted); line-height: 1.4; }
     .notif-btn {
       flex-shrink: 0;
       font-family: 'Nunito', sans-serif;
@@ -269,41 +269,11 @@
     }
     .notif-btn:hover  { transform: scale(1.04); }
     .notif-btn:active { transform: scale(0.97); }
-    .notif-btn.subscribe {
-      color: #fff;
-      background: var(--amber);
-      border-color: var(--amber);
-    }
+    .notif-btn.subscribe { color: #fff; background: var(--amber); border-color: var(--amber); }
     .notif-btn.subscribe:hover { background: #e09510; border-color: #e09510; }
-    .notif-btn.unsubscribe {
-      color: var(--muted);
-      background: transparent;
-      border-color: var(--border);
-    }
+    .notif-btn.unsubscribe { color: var(--muted); background: transparent; border-color: var(--border); }
     .notif-btn.unsubscribe:hover { background: rgba(245,166,35,0.08); }
     .notif-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
-
-    /* ── Timeline ── */
-    .timeline-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 1.1rem 1.4rem;
-      box-shadow: 0 2px 0 rgba(255,255,255,0.9) inset, 0 4px 20px var(--shadow);
-      margin-bottom: 0.9rem;
-    }
-    .timeline-card.hidden { display: none; }
-    .timeline-label {
-      font-size: 0.68rem;
-      font-family: 'DM Mono', monospace;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.5rem;
-    }
-    .timeline-bar { display: flex; height: 24px; gap: 3px; align-items: flex-end; }
-    .timeline-bar > div { flex: 1; min-width: 2px; border-radius: 2px; height: 100%; }
-    .timeline-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -320,50 +290,43 @@
       </div>
     </div>
 
+    <!-- ── Carte principale : verdict clair ── -->
     <div class="card">
-      <div class="status-row">
-        <span class="status-label">État du réseau</span>
-        <span class="status-badge" id="statusBadge">—</span>
+      <div class="verdict">
+        <div class="verdict-status" id="verdictStatus">—</div>
+        <div class="verdict-hint" id="verdictHint"></div>
       </div>
-      <div class="score-section">
-        <div class="score-meta">
-          <div class="score-value" id="scoreValue">—</div>
-          <div class="score-right">
-            <div class="score-unit">/ 150 pts</div>
-            <div class="score-label">Score réseau</div>
-          </div>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" id="barFill" style="width: 0%"></div>
-        </div>
-      </div>
-      <div class="details">
-        <div class="detail-cell">
-          <div class="detail-key">Gaz CCG</div>
-          <div class="detail-val" id="detailGas">—</div>
-        </div>
-        <div class="detail-cell">
-          <div class="detail-key">Nucléaire</div>
-          <div class="detail-val" id="detailNuclear">—</div>
-        </div>
-        <div class="detail-cell">
-          <div class="detail-key">Stockage</div>
-          <div class="detail-val" id="detailStorage">—</div>
-        </div>
-        <div class="detail-cell">
-          <div class="detail-key">Meilleure fenêtre</div>
-          <div class="detail-val" id="detailWindow">—</div>
-        </div>
+      <div class="score-row">
+        <div class="bar-track"><div class="bar-fill" id="barFill" style="width: 0%"></div></div>
+        <span class="score-small" id="scoreValue">—</span>
       </div>
     </div>
 
-    <!-- ── Timeline ── -->
-    <div class="timeline-card hidden" id="timelineCard">
-      <div class="timeline-label">Prochaines heures</div>
+    <!-- ── Carte forward : fenêtre verte + timeline ── -->
+    <div class="forward-card" id="forwardCard">
+      <div class="forward-section-label">Prochaine fenêtre verte</div>
+      <div class="forward-window" id="forwardWindow">—</div>
+      <div class="forward-section-label">Évolution prévue</div>
       <div class="timeline-bar" id="timelineBar"></div>
       <div class="timeline-labels">
         <span id="tlLabelStart"></span>
         <span id="tlLabelEnd"></span>
+      </div>
+    </div>
+
+    <!-- ── Détails techniques discrets ── -->
+    <div class="tech-strip">
+      <div class="tech-item">
+        <span class="tech-label">Gaz</span>
+        <span class="tech-val" id="detailGas">—</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-label">Nuc</span>
+        <span class="tech-val" id="detailNuclear">—</span>
+      </div>
+      <div class="tech-item">
+        <span class="tech-label">Stock</span>
+        <span class="tech-val" id="detailStorage">—</span>
       </div>
     </div>
 
@@ -391,16 +354,15 @@
     const API_URL = ""
 
     const STATUS_CONFIG = {
-      leaf:   { label: "🍃 Abondance",  color: "#3cb96b" },
-      green:  { label: "🟢 Vert",       color: "#52c97e" },
-      orange: { label: "🟠 Tendu",      color: "#e8804a" },
-      red:    { label: "🔴 Très tendu", color: "#e05050" },
-      fire:   { label: "🔥 Critique",   color: "#cc2e2e" },
+      leaf:   { label: "🍃 Abondance",    color: "#3cb96b", hint: "C'est le moment idéal !" },
+      green:  { label: "🟢 Feu vert",     color: "#52c97e", hint: "Bon moment pour consommer" },
+      orange: { label: "🟠 Réseau tendu", color: "#e8804a", hint: "Mieux vaut patienter si possible" },
+      red:    { label: "🔴 Très tendu",   color: "#e05050", hint: "Évitez les appareils énergivores" },
+      fire:   { label: "🔥 Critique",     color: "#cc2e2e", hint: "Reportez toute grosse consommation" },
     }
 
     const $ = id => document.getElementById(id)
-    const pct = v => v !== null && v !== undefined ? `${Math.round(v * 100)} %` : "—"
-    const fmt = v => v !== null && v !== undefined ? v.toFixed(1) : "—"
+    const pct = v => v !== null && v !== undefined ? `${Math.round(v * 100)}%` : "—"
 
     function setAccent(color) {
       document.documentElement.style.setProperty("--accent", color)
@@ -408,17 +370,21 @@
     }
 
     function render(data) {
-      const cfg = STATUS_CONFIG[data.status] || { label: data.status, color: "#f5a623" }
+      const cfg = STATUS_CONFIG[data.status] || { label: data.status, color: "#f5a623", hint: "" }
       setAccent(cfg.color)
-      $("statusBadge").textContent   = cfg.label
-      $("statusBadge").style.color   = cfg.color
-      $("statusBadge").style.background = cfg.color + "1a"
-      $("scoreValue").textContent    = fmt(data.score)
-      $("barFill").style.width       = `${Math.min(100, (data.score / 150) * 100)}%`
+
+      $("verdictStatus").textContent = cfg.label
+      $("verdictStatus").style.color = cfg.color
+      $("verdictHint").textContent = cfg.hint
+
+      $("scoreValue").textContent = `${Math.round(data.score)} / 150`
+      $("barFill").style.width = `${Math.min(100, (data.score / 150) * 100)}%`
+
       const d = data.details || {}
       $("detailGas").textContent     = d.gasCCG_use_rate !== undefined ? pct(d.gasCCG_use_rate) : "—"
       $("detailNuclear").textContent = d.nuclear_use_rate !== undefined ? pct(d.nuclear_use_rate) : "—"
       $("detailStorage").textContent = d.storage_use_rate !== undefined ? pct(d.storage_use_rate) : "—"
+
       if (data.ts) {
         const dt = new Date(data.ts)
         $("timestamp").textContent = dt.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
@@ -429,17 +395,14 @@
     const TIMELINE_COLORS = { green: "#4caf50", orange: "#ff9800", red: "#f44336" }
 
     function renderTimeline(data) {
-      const card = $("timelineCard")
       const bar = $("timelineBar")
-      if (!data.slots || data.slots.length === 0) { card.classList.add("hidden"); return }
-      card.classList.remove("hidden")
+      if (!data.slots || data.slots.length === 0) return
       bar.innerHTML = ""
       const hm = d => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
       for (const slot of data.slots) {
         const d = document.createElement("div")
         d.style.background = TIMELINE_COLORS[slot.color] || TIMELINE_COLORS.orange
         d.title = hm(slot.t)
-        d.style.cursor = "default"
         bar.appendChild(d)
       }
       $("tlLabelStart").textContent = hm(data.slots[0].t)
@@ -470,7 +433,7 @@
         when = start.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + ` ${hm(start)}`
       }
 
-      $("detailWindow").textContent = when
+      $("forwardWindow").textContent = when
     }
 
     async function fetchData() {
@@ -511,23 +474,20 @@
     // NOTIFICATIONS PUSH
     // ══════════════════════════════════════════════════════════════════
 
-    let _swRegistration = null   // ServiceWorkerRegistration
-    let _vapidPublicKey  = null  // clé VAPID base64url
+    let _swRegistration = null
+    let _vapidPublicKey  = null
 
-    // Convertit une clé VAPID base64url en Uint8Array (requis par subscribe())
     function urlBase64ToUint8Array(b64) {
       const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, "=")
       const raw = atob(padded.replace(/-/g, "+").replace(/_/g, "/"))
       return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
     }
 
-    // Récupère la subscription active (ou null)
     async function getActiveSub() {
       if (!_swRegistration) return null
       return _swRegistration.pushManager.getSubscription()
     }
 
-    // Met à jour l'UI de la carte selon l'état courant
     function setNotifState(state) {
       const card = $("notifCard")
       const btn  = $("notifBtn")
@@ -538,10 +498,7 @@
       card.classList.remove("hidden")
       btn.disabled = false
 
-      if (state === "unsupported") {
-        card.classList.add("hidden")
-        return
-      }
+      if (state === "unsupported") { card.classList.add("hidden"); return }
       if (state === "denied") {
         icon.textContent  = "🔕"
         title.textContent = "Notifications bloquées"
@@ -558,7 +515,6 @@
         btn.style.display = ""
         return
       }
-      // default: "unsubscribed"
       icon.textContent  = "🔔"
       title.textContent = "Alertes réseau"
       desc.textContent  = "Sois notifié lors des périodes d'abondance 🍃 ou de forte tension 🔥"
@@ -567,38 +523,20 @@
       btn.style.display = ""
     }
 
-    // Initialise le Service Worker et lit l'état au chargement
     async function initPush() {
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-        setNotifState("unsupported")
-        return
+        setNotifState("unsupported"); return
       }
-
-      // Enregistre le Service Worker
       try {
         _swRegistration = await navigator.serviceWorker.register(`/sw.js?appUrl=${encodeURIComponent(API_URL)}`, { scope: "/" })
-      } catch (e) {
-        console.error("SW registration failed:", e)
-        setNotifState("unsupported")
-        return
-      }
-
-      // Récupère la clé VAPID publique depuis l'API
+      } catch (e) { console.error("SW registration failed:", e); setNotifState("unsupported"); return }
       try {
         const r = await fetch(`${API_URL}/vapid-public-key`)
         const data = await r.json()
         _vapidPublicKey = data.publicKey
-      } catch (e) {
-        console.error("Could not fetch VAPID public key:", e)
-        setNotifState("unsupported")
-        return
-      }
+      } catch (e) { console.error("Could not fetch VAPID public key:", e); setNotifState("unsupported"); return }
 
-      // Affiche le bon état
-      if (Notification.permission === "denied") {
-        setNotifState("denied")
-        return
-      }
+      if (Notification.permission === "denied") { setNotifState("denied"); return }
       const sub = await getActiveSub()
       setNotifState(sub ? "subscribed" : "unsubscribed")
     }
@@ -609,48 +547,21 @@
       const sub = await getActiveSub()
 
       if (sub) {
-        // ── Désabonnement ──
         try {
-          await fetch(`${API_URL}/wsubs`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ endpoint: sub.endpoint }),
-          })
+          await fetch(`${API_URL}/wsubs`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) })
           await sub.unsubscribe()
           setNotifState("unsubscribed")
-        } catch (e) {
-          console.error(e)
-          btn.disabled = false
-        }
+        } catch (e) { console.error(e); btn.disabled = false }
       } else {
-        // ── Abonnement ──
         let permission = Notification.permission
-        if (permission === "default") {
-          permission = await Notification.requestPermission()
-        }
-        if (permission !== "granted") {
-          setNotifState("denied")
-          return
-        }
+        if (permission === "default") permission = await Notification.requestPermission()
+        if (permission !== "granted") { setNotifState("denied"); return }
         try {
           const keyArray = urlBase64ToUint8Array(_vapidPublicKey)
-          console.log('VAPID key:', _vapidPublicKey)
-          console.log('VAPID key length:', _vapidPublicKey?.length)
-          console.log('Key array length:', keyArray.length)
-          const newSub = await _swRegistration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: keyArray,
-          })
-          await fetch(`${API_URL}/wsubs`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newSub.toJSON()),
-          })
+          const newSub = await _swRegistration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyArray })
+          await fetch(`${API_URL}/wsubs`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newSub.toJSON()) })
           setNotifState("subscribed")
-        } catch (e) {
-          console.error(e)
-          btn.disabled = false
-        }
+        } catch (e) { console.error(e); btn.disabled = false }
       }
     }
 
