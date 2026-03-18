@@ -36,7 +36,9 @@ class Notifier:
             return
         self.last_seen_ts = ts
 
-        time = to_utc_timestamp(ts).strftime("%H:%M")
+        from zoneinfo import ZoneInfo
+        from oventime.config import TIMEZONE
+        time = to_utc_timestamp(ts).astimezone(ZoneInfo(TIMEZONE)).strftime("%H:%M")
 
         title = None
         text = None
