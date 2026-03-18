@@ -1,9 +1,12 @@
 import math
+import logging
 from datetime import datetime, timezone, timedelta
 
 from oventime.config import WINDOW_RANGE, WINDOW_METHOD, OTSU_SEVERITY
-from oventime.utils import to_utc_timestamp, floor_dt
+from oventime.utils import to_utc_timestamp, to_epoch, floor_dt
 from oventime.input import data_storage
+
+logger = logging.getLogger(__name__)
 
 
 def optimal_threshold_otsu(prices: list[float], severity=OTSU_SEVERITY):
@@ -136,3 +139,147 @@ def output(now: datetime = None):
         "nextwind_end": pwind["end_time"],
         "nextwind_method": pwind["method"]
     }
+
+
+# ── Timeline ternaire ────────────────────────────────────
+
+_STATUS_TO_COLOR = {
+    "leaf": "green",
+    "green": "green",
+    "orange": "orange",
+    "red": "red",
+    "fire": "red",
+}
+
+
+def price_status_thresholds(now: datetime, lookback_hours: int = 48):
+    """
+    Compute price thresholds for green/orange/red classification
+    by cross-referencing historical prices with cached eco2mix statuses.
+
+    Returns (threshold_green_orange, threshold_orange_red).
+    """
+    from oventime.cache.cache import get_connection
+
+    start = now - timedelta(hours=lookback_hours)
+
+    # Read cached statuses (ts is epoch)
+    start_epoch = to_epoch(start)
+    now_epoch = to_epoch(now)
+
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT ts, status FROM cache WHERE ts >= ? AND ts <= ? ORDER BY ts",
+        (start_epoch, now_epoch),
+    )
+    cache_rows = cur.fetchall()
+    conn.close()
+
+    if not cache_rows:
+        logger.warning("No cached statuses found for threshold computation.")
+        return None
+
+    # Read historical prices
+    hist_prices = data_storage.read_prices(start=start, end=now)
+    price_by_epoch = {to_epoch(r["date_heure"]): r["price"] for r in hist_prices if r["price"] is not None}
+
+    # Pair: for each cache entry, find matching price
+    green_prices = []
+    orange_prices = []
+    red_prices = []
+
+    for ts, status in cache_rows:
+        price = price_by_epoch.get(ts)
+        if price is None:
+            continue
+        color = _STATUS_TO_COLOR.get(status)
+        if color == "green":
+            green_prices.append(price)
+        elif color == "orange":
+            orange_prices.append(price)
+        elif color == "red":
+            red_prices.append(price)
+
+    all_paired_prices = green_prices + orange_prices + red_prices
+
+    if not all_paired_prices:
+        return None
+
+    # Compute thresholds using medians (robust to overlapping distributions)
+    def _median(lst):
+        s = sorted(lst)
+        n = len(s)
+        if n % 2 == 1:
+            return s[n // 2]
+        return (s[n // 2 - 1] + s[n // 2]) / 2
+
+    if green_prices and orange_prices:
+        t1 = (_median(green_prices) + _median(orange_prices)) / 2
+    elif green_prices:
+        t1 = _median(green_prices)
+    elif orange_prices:
+        t1 = _median(orange_prices)
+    else:
+        sorted_all = sorted(all_paired_prices)
+        t1 = sorted_all[len(sorted_all) // 3]
+
+    if orange_prices and red_prices:
+        t2 = (_median(orange_prices) + _median(red_prices)) / 2
+    elif orange_prices:
+        t2 = max(orange_prices)
+    elif red_prices:
+        t2 = _median(red_prices)
+    elif green_prices:
+        t2 = max(all_paired_prices)
+    else:
+        sorted_all = sorted(all_paired_prices)
+        t2 = sorted_all[2 * len(sorted_all) // 3]
+
+    # Ensure t1 <= t2
+    if t1 > t2:
+        t1, t2 = t2, t1
+
+    return t1, t2
+
+
+def timeline_output(now: datetime = None):
+    """
+    Compute a ternary-colored timeline of future price slots.
+    Returns list[dict] with {"date_heure": datetime, "color": str}.
+    Returns None if thresholds or prices are unavailable.
+    """
+    data_storage.init_raw_db()
+
+    if now is None:
+        now = datetime.now(timezone.utc)
+    now = floor_dt(to_utc_timestamp(now))
+
+    thresholds = price_status_thresholds(now)
+    if thresholds is None:
+        logger.warning("Cannot compute timeline: no price/status pairs available.")
+        return None
+
+    t1, t2 = thresholds
+
+    # Read future prices (next 12h)
+    future_prices = data_storage.read_prices(start=now, end=now + timedelta(hours=12))
+
+    if not future_prices:
+        logger.warning("Cannot compute timeline: no future prices available.")
+        return None
+
+    slots = []
+    for row in future_prices:
+        price = row["price"]
+        if price is None:
+            color = "orange"  # default if price missing
+        elif price <= t1:
+            color = "green"
+        elif price <= t2:
+            color = "orange"
+        else:
+            color = "red"
+        slots.append({"date_heure": row["date_heure"], "color": color, "price": price})
+
+    return {"slots": slots, "threshold_go": t1, "threshold_or": t2}

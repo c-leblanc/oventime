@@ -282,6 +282,28 @@
     }
     .notif-btn.unsubscribe:hover { background: rgba(245,166,35,0.08); }
     .notif-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+    /* ── Timeline ── */
+    .timeline-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.1rem 1.4rem;
+      box-shadow: 0 2px 0 rgba(255,255,255,0.9) inset, 0 4px 20px var(--shadow);
+      margin-bottom: 0.9rem;
+    }
+    .timeline-card.hidden { display: none; }
+    .timeline-label {
+      font-size: 0.68rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .timeline-bar { display: flex; height: 24px; gap: 3px; align-items: flex-end; }
+    .timeline-bar > div { flex: 1; min-width: 2px; border-radius: 2px; height: 100%; }
+    .timeline-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -329,9 +351,19 @@
           <div class="detail-val" id="detailStorage">—</div>
         </div>
         <div class="detail-cell">
-          <div class="detail-key">Bonne fenêtre</div>
+          <div class="detail-key">Meilleure fenêtre</div>
           <div class="detail-val" id="detailWindow">—</div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── Timeline ── -->
+    <div class="timeline-card hidden" id="timelineCard">
+      <div class="timeline-label">Prochaines heures</div>
+      <div class="timeline-bar" id="timelineBar"></div>
+      <div class="timeline-labels">
+        <span id="tlLabelStart"></span>
+        <span id="tlLabelEnd"></span>
       </div>
     </div>
 
@@ -394,6 +426,26 @@
       $("errorMsg").style.display = "none"
     }
 
+    const TIMELINE_COLORS = { green: "#4caf50", orange: "#ff9800", red: "#f44336" }
+
+    function renderTimeline(data) {
+      const card = $("timelineCard")
+      const bar = $("timelineBar")
+      if (!data.slots || data.slots.length === 0) { card.classList.add("hidden"); return }
+      card.classList.remove("hidden")
+      bar.innerHTML = ""
+      const hm = d => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+      for (const slot of data.slots) {
+        const d = document.createElement("div")
+        d.style.background = TIMELINE_COLORS[slot.color] || TIMELINE_COLORS.orange
+        d.title = hm(slot.t)
+        d.style.cursor = "default"
+        bar.appendChild(d)
+      }
+      $("tlLabelStart").textContent = hm(data.slots[0].t)
+      $("tlLabelEnd").textContent = hm(data.slots[data.slots.length - 1].t)
+    }
+
     function renderWindow(data) {
       const start = new Date(data.nextwind_start)
       const end = new Date(data.nextwind_end)
@@ -436,6 +488,12 @@
         if (res.ok) renderWindow(await res.json())
       } catch (e) {
         console.error("next/window:", e)
+      }
+      try {
+        const res = await fetch(`${API_URL}/prices/timeline`)
+        if (res.ok) renderTimeline(await res.json())
+      } catch (e) {
+        console.error("prices/timeline:", e)
       }
     }
 

@@ -35,7 +35,7 @@ EMAIL = os.getenv("EMAIL","")
 TIMEZONE = "Europe/Paris"
 
 ## Data
-RETENTION_DAYS = 8 # Data to keep in memory
+RETENTION_DAYS = 15 # Data to keep in memory
 FREQ_UPDATE = 5 # Frequency at which the updating background job runs
 FREQ_UPDATE_ECO2MIX = 20 # Eco2Mix Data : Time elapsed since last data that triggers an update attempt (in minutes).
 MIN_FORESIGHT_PRICES = 12 # Price Data from ENTSO-E : Update attempt triggered if last data less than MIN_FORESIGHT_PRICES in the future

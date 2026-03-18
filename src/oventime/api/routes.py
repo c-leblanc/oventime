@@ -8,14 +8,14 @@ import os
 logger = logging.getLogger(__name__)
 
 from oventime.cache.cache import (
-    get_status,get_fulldiag,get_nextwindow,
+    get_status,get_fulldiag,get_nextwindow,get_timeline,
     add_wsubs,remove_wsubs,
     get_connection
 )
 from oventime.jobs.notifier import notifier
 from oventime.config import INTERNAL_API_TOKEN, VAPID_PUBLIC_KEY
 
-ALLOWED_TABLES = {"cache", "web_subscribers"}
+ALLOWED_TABLES = {"cache", "web_subscribers", "timeline"}
 
 
 app = FastAPI(
@@ -74,6 +74,15 @@ def next_window(time: str = None):
         raise HTTPException(status_code=404, detail="No estimates available for the next window")
 
     return res
+
+@app.get("/prices/timeline")
+def prices_timeline():
+    """Timeline ternaire (vert/orange/rouge) des prochaines heures."""
+    slots = get_timeline()
+    if not slots:
+        raise HTTPException(status_code=404, detail="No timeline available")
+    return {"slots": slots}
+
 
 # ─────────────────────────────────────────────
 # Web Push subscribers

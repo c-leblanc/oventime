@@ -107,10 +107,18 @@ def update_eco2mix_data(
 
     # 2. Determine download window
     now = floor_dt(datetime.now(timezone.utc))
+    earliest_needed = now - timedelta(days=retention_days)
+
     if last_timestamp is None:
-        start = now - timedelta(days=retention_days)
+        start = earliest_needed
     else:
-        start = last_timestamp + timedelta(minutes=15)
+        # Si les données locales ne remontent pas assez loin, retélécharger l'historique manquant
+        oldest_local = local[0]["date_heure"] if local else None
+        if oldest_local is None or oldest_local > earliest_needed + timedelta(hours=1):
+            start = earliest_needed
+            logger.info(f"Données locales trop récentes ({oldest_local}), retéléchargement depuis {start}")
+        else:
+            start = last_timestamp + timedelta(minutes=15)
 
     if start >= now:
         logger.info("Data already up to date. Nothing to download.")
