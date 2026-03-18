@@ -329,8 +329,8 @@
           <div class="detail-val" id="detailStorage">—</div>
         </div>
         <div class="detail-cell">
-          <div class="detail-key">Score brut</div>
-          <div class="detail-val" id="detailScore">—</div>
+          <div class="detail-key">Bonne fenêtre</div>
+          <div class="detail-val" id="detailWindow">—</div>
         </div>
       </div>
     </div>
@@ -387,12 +387,38 @@
       $("detailGas").textContent     = d.gasCCG_use_rate !== undefined ? pct(d.gasCCG_use_rate) : "—"
       $("detailNuclear").textContent = d.nuclear_use_rate !== undefined ? pct(d.nuclear_use_rate) : "—"
       $("detailStorage").textContent = d.storage_use_rate !== undefined ? pct(d.storage_use_rate) : "—"
-      $("detailScore").textContent   = fmt(data.score)
       if (data.ts) {
         const dt = new Date(data.ts)
         $("timestamp").textContent = dt.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
       }
       $("errorMsg").style.display = "none"
+    }
+
+    function renderWindow(data) {
+      const start = new Date(data.nextwind_start)
+      const end = new Date(data.nextwind_end)
+      const now = new Date()
+
+      const hm = d => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+
+      const startDay = new Date(start); startDay.setHours(0,0,0,0)
+      const today = new Date(now); today.setHours(0,0,0,0)
+      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
+
+      let when
+      if (now >= start && now <= end) {
+        when = `En cours → ${hm(end)}`
+      } else if (startDay.getTime() === today.getTime() && start.getHours() <= 22) {
+        when = `${hm(start)} → ${hm(end)}`
+      } else if (startDay.getTime() === tomorrow.getTime() && start.getHours() > 6) {
+        when = `Demain ${hm(start)}`
+      } else if (startDay.getTime() <= tomorrow.getTime() && (start.getHours() >= 22 || start.getHours() < 6)) {
+        when = `Cette nuit ${hm(start)}`
+      } else {
+        when = start.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + ` ${hm(start)}`
+      }
+
+      $("detailWindow").textContent = when
     }
 
     async function fetchData() {
@@ -404,6 +430,12 @@
         console.error(e)
         $("errorMsg").style.display = "block"
         render(MOCK_DATA)
+      }
+      try {
+        const res = await fetch(`${API_URL}/next/window`)
+        if (res.ok) renderWindow(await res.json())
+      } catch (e) {
+        console.error("next/window:", e)
       }
     }
 
