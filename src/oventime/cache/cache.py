@@ -44,16 +44,6 @@ def init_db():
     """)
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS subscribers (
-        chat_id INTEGER PRIMARY KEY,
-        first_seen INTEGER NOT NULL,
-        last_activated INTEGER,
-        last_deactivated INTEGER,
-        active INTEGER NOT NULL DEFAULT 1
-    );
-    """)
-
-    cur.execute("""
     CREATE TABLE IF NOT EXISTS web_subscribers (
         endpoint TEXT PRIMARY KEY,
         p256dh TEXT NOT NULL,
@@ -244,39 +234,3 @@ def remove_wsubs(endpoint: str):
     conn.commit()
     conn.close()
 
-#############################################
-## Telegram Subscribers (tsubs)
-
-def get_tsubs() -> set:
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT chat_id FROM subscribers WHERE active = 1")
-    rows = cur.fetchall()
-    conn.close()
-    return {row[0] for row in rows}
-
-def add_tsubs(chat_id: int):
-    conn = get_connection()
-    cur = conn.cursor()
-    now = int(time.time())
-    cur.execute("""
-        INSERT INTO subscribers (chat_id, first_seen, last_activated, active)
-        VALUES (?, ?, ?, 1)
-        ON CONFLICT(chat_id) DO UPDATE SET
-            last_activated = excluded.last_activated,
-            active = 1
-    """, (chat_id, now, now))
-    conn.commit()
-    conn.close()
-
-def remove_tsubs(chat_id: int):
-    conn = get_connection()
-    cur = conn.cursor()
-    now = int(time.time())
-    cur.execute("""
-        UPDATE subscribers
-        SET active = 0, last_deactivated = ?
-        WHERE chat_id = ?
-    """, (now, chat_id))
-    conn.commit()
-    conn.close()

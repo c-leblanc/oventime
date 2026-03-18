@@ -111,33 +111,14 @@ def test_vapid_public_key(client):
 
 def test_admin_without_token_returns_401(client):
     """Sans token → rejeté."""
-    r = client.get("/tsubs")
+    r = client.get("/admin/tables")
     assert r.status_code == 401
 
 
 def test_admin_with_bad_token_returns_401(client):
     """Mauvais token → rejeté aussi."""
-    r = client.get("/tsubs", headers={"x-internal-token": "wrong"})
+    r = client.get("/admin/tables", headers={"x-internal-token": "wrong"})
     assert r.status_code == 401
-
-
-def test_admin_tsubs_crud(client, auth_headers):
-    """Cycle complet : lister → ajouter → vérifier → supprimer → vérifier."""
-    r = client.get("/tsubs", headers=auth_headers)
-    assert r.json()["chat_ids"] == []
-
-    r = client.post("/tsubs/12345", headers=auth_headers)
-    assert r.status_code == 200
-    assert r.json()["chat_id"] == 12345
-
-    r = client.get("/tsubs", headers=auth_headers)
-    assert 12345 in r.json()["chat_ids"]
-
-    r = client.delete("/tsubs/12345", headers=auth_headers)
-    assert r.status_code == 200
-
-    r = client.get("/tsubs", headers=auth_headers)
-    assert 12345 not in r.json()["chat_ids"]
 
 
 def test_admin_tables_blocked_name(client, auth_headers):

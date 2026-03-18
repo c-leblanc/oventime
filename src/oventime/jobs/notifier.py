@@ -1,12 +1,11 @@
 import logging
 import json
-import httpx
 from pywebpush import webpush, WebPushException
 from py_vapid import Vapid
 from urllib.parse import urlparse
 
-from oventime.cache.cache import get_fulldiag, get_tsubs, get_wsubs, remove_wsubs
-from oventime.config import LEAF_THRESHOLD, FIRE_THRESHOLD, EMAIL, TELEGRAM_TOKEN, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY
+from oventime.cache.cache import get_fulldiag, get_wsubs, remove_wsubs
+from oventime.config import LEAF_THRESHOLD, FIRE_THRESHOLD, EMAIL, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY
 from oventime.utils import to_utc_timestamp
 
 logger = logging.getLogger(__name__)
@@ -72,27 +71,7 @@ class Notifier:
             return
 
         logger.info(f"Alerte déclenchée : {text[:50]}…")
-        await self._notify_telegram(f"{title}\n{text} -- \\m pour plus d'info")
         await self._notify_web(title=title, body=text)
-
-    # ── Envoi Telegram ────────────────────────────────────────────────────────────
-    async def _notify_telegram(self, text: str):
-        chat_ids = get_tsubs()
-        if not chat_ids: return
-        if not TELEGRAM_TOKEN: return
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        async with httpx.AsyncClient(timeout=5) as client:
-            for chat_id in chat_ids:
-                try:
-                    r = await client.post(url, json={"chat_id": chat_id, "text": text})
-                    if r.status_code == 401:
-                        logger.error("Telegram token invalide, envoi des alertes abandonné.")
-                        return
-                    r.raise_for_status()
-                except httpx.HTTPStatusError:
-                    pass  # déjà géré au dessus
-                except Exception as e:
-                    logger.error(f"Erreur envoi Telegram chat_id={chat_id}: {e!r}")
 
     # ── Envoi Web Push ────────────────────────────────────────────────────────────
     async def _notify_web(self, title: str = None, body: str = None, subs_override: dict = None):

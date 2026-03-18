@@ -62,20 +62,6 @@ def test_get_status_and_nextwindow(tmp_path):
     assert "nextwind_end" in nextw
 
 
-def test_tsubs_add_remove(tmp_path):
-    db_path = tmp_path / "cache.sqlite"
-    cache.DB_PATH = db_path
-    cache.init_db()
-
-    cache.add_tsubs(123456)
-    subs = cache.get_tsubs()
-    assert 123456 in subs
-
-    cache.remove_tsubs(123456)
-    subs2 = cache.get_tsubs()
-    assert 123456 not in subs2
-
-
 def test_wsubs_add_remove(tmp_path):
     db_path = tmp_path / "cache.sqlite"
     cache.DB_PATH = db_path

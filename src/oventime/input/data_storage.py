@@ -21,7 +21,6 @@ ECO2MIX_COLS = [
 def _get_conn() -> sqlite3.Connection:
     RAW_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(RAW_DB_PATH))
-    conn.execute("PRAGMA journal_mode=WAL")
     return conn
 
 

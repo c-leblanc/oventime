@@ -10,13 +10,12 @@ logger = logging.getLogger(__name__)
 from oventime.cache.cache import (
     get_status,get_fulldiag,get_nextwindow,
     add_wsubs,remove_wsubs,
-    get_tsubs,add_tsubs,remove_tsubs,
     get_connection
 )
 from oventime.jobs.notifier import notifier
 from oventime.config import INTERNAL_API_TOKEN, VAPID_PUBLIC_KEY
 
-ALLOWED_TABLES = {"cache", "subscribers", "web_subscribers"}
+ALLOWED_TABLES = {"cache", "web_subscribers"}
 
 
 app = FastAPI(
@@ -117,33 +116,6 @@ def clear_all_wsubs(x_internal_token: str | None = Header(default=None)):
     conn.close()
     return {"status": "cleared"}
  
-
-# ─────────────────────────────────────────────
-# Telegram subscribers
-
-@app.get("/tsubs")
-def list_tsubs(x_internal_token: str | None = Header(default=None)):
-    """Retourne la liste des chat_id abonnés actifs."""
-    _check_token(x_internal_token)
-    subs = get_tsubs()
-    return {"chat_ids": list(subs)}
-
-
-@app.post("/tsubs/{chat_id}", status_code=200)
-def subscribe(chat_id: int, x_internal_token: str | None = Header(default=None)):
-    """Active (ou réactive) un abonné."""
-    _check_token(x_internal_token)
-    add_tsubs(chat_id)
-    return {"status": "subscribed", "chat_id": chat_id}
-
-
-@app.delete("/tsubs/{chat_id}", status_code=200)
-def unsubscribe(chat_id: int, x_internal_token: str | None = Header(default=None)):
-    """Désactive un abonné."""
-    _check_token(x_internal_token)
-    remove_tsubs(chat_id)
-    return {"status": "unsubscribed", "chat_id": chat_id}
-
 
 # ─────────────────────────────────────────────
 # Admin / debug

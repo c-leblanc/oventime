@@ -40,49 +40,42 @@ def insert_diag(score, minutes_offset=0):
 
 @pytest.mark.asyncio
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
-@patch.object(Notifier, "_notify_telegram", new_callable=AsyncMock)
-async def test_no_alert_when_score_normal(mock_tg, mock_web):
+async def test_no_alert_when_score_normal(mock_web):
     """Score entre les seuils → aucune alerte envoyée."""
     insert_diag(score=50)
     n = Notifier()
     await n.check_and_notify()
 
-    mock_tg.assert_not_called()
     mock_web.assert_not_called()
 
 
 @pytest.mark.asyncio
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
-@patch.object(Notifier, "_notify_telegram", new_callable=AsyncMock)
-async def test_alert_on_abundance(mock_tg, mock_web):
+async def test_alert_on_abundance(mock_web):
     """Score au-dessus de LEAF_THRESHOLD → alerte abondance."""
     insert_diag(score=LEAF_THRESHOLD + 10)
     n = Notifier()
     await n.check_and_notify()
 
-    mock_tg.assert_called_once()
     mock_web.assert_called_once()
     assert n.last_alert_high is True
 
 
 @pytest.mark.asyncio
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
-@patch.object(Notifier, "_notify_telegram", new_callable=AsyncMock)
-async def test_alert_on_tension(mock_tg, mock_web):
+async def test_alert_on_tension(mock_web):
     """Score en-dessous de FIRE_THRESHOLD → alerte tension."""
     insert_diag(score=FIRE_THRESHOLD - 5)
     n = Notifier()
     await n.check_and_notify()
 
-    mock_tg.assert_called_once()
     mock_web.assert_called_once()
     assert n.last_alert_low is True
 
 
 @pytest.mark.asyncio
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
-@patch.object(Notifier, "_notify_telegram", new_callable=AsyncMock)
-async def test_no_duplicate_alert(mock_tg, mock_web):
+async def test_no_duplicate_alert(mock_web):
     """Même timestamp vu deux fois → pas de double alerte."""
     insert_diag(score=LEAF_THRESHOLD + 10)
     n = Notifier()
@@ -90,13 +83,12 @@ async def test_no_duplicate_alert(mock_tg, mock_web):
     await n.check_and_notify()
     await n.check_and_notify()
 
-    assert mock_tg.call_count == 1
+    assert mock_web.call_count == 1
 
 
 @pytest.mark.asyncio
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
-@patch.object(Notifier, "_notify_telegram", new_callable=AsyncMock)
-async def test_return_to_normal_after_abundance(mock_tg, mock_web):
+async def test_return_to_normal_after_abundance(mock_web):
     """Score redescend sous LEAF → alerte 'retour à la normale'."""
     insert_diag(score=LEAF_THRESHOLD + 10, minutes_offset=-30)
     n = Notifier()
@@ -106,16 +98,14 @@ async def test_return_to_normal_after_abundance(mock_tg, mock_web):
     insert_diag(score=50, minutes_offset=-15)
     await n.check_and_notify()
     assert n.last_alert_high is False
-    assert mock_tg.call_count == 2
+    assert mock_web.call_count == 2
 
 
 @pytest.mark.asyncio
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
-@patch.object(Notifier, "_notify_telegram", new_callable=AsyncMock)
-async def test_no_alert_when_cache_empty(mock_tg, mock_web):
+async def test_no_alert_when_cache_empty(mock_web):
     """Cache vide → rien ne se passe, pas d'erreur."""
     n = Notifier()
     await n.check_and_notify()
 
-    mock_tg.assert_not_called()
     mock_web.assert_not_called()

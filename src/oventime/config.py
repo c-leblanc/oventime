@@ -22,8 +22,6 @@ INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN")
 ENTSOE_API_KEY = os.getenv("ENTSOE_API_KEY")
 COUNTRY_CODE = "FR" # Country code used by entsoe-py
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN","")
-
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY   = os.getenv("VAPID_PUBLIC_KEY", "")
 
