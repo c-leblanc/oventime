@@ -103,7 +103,7 @@
     }
     .verdict {
       text-align: center;
-      padding: 0.5rem 0 1.2rem;
+      padding: 0.2rem 0 0.1rem;
     }
     .verdict-status {
       font-size: 1.6rem;
@@ -117,29 +117,75 @@
       color: var(--muted);
       font-weight: 600;
     }
-    .score-row {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
+    .gauge-outer {
+      position: relative;
+      margin-top: 0.3rem;
+      padding-top: 16px;
+      padding-bottom: 40px;
     }
-    .bar-track {
-      flex: 1;
-      height: 6px;
-      background: var(--border);
-      border-radius: 6px;
-      overflow: hidden;
-    }
-    .bar-fill {
-      height: 100%;
-      border-radius: 6px;
-      background: linear-gradient(90deg, var(--accent), #ffe082);
-      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background 0.8s;
-    }
-    .score-small {
+    .gauge-title {
+      font-size: 0.62rem;
       font-family: 'DM Mono', monospace;
-      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       color: var(--muted);
-      white-space: nowrap;
+      margin-bottom: 0.2rem;
+    }
+    .gauge-bg {
+      position: absolute;
+      left: 8.3%; right: 8.3%;
+      top: 16px; height: 10px;
+      background: var(--border);
+      border-radius: 5px;
+    }
+    .gauge-fill {
+      position: absolute;
+      top: 16px; height: 10px;
+      border-radius: 5px;
+      z-index: 1;
+      transition: left 1s cubic-bezier(0.4, 0, 0.2, 1),
+                  width 1s cubic-bezier(0.4, 0, 0.2, 1),
+                  background 0.8s;
+    }
+    .gauge-outline {
+      position: absolute;
+      left: 8.3%; right: 8.3%;
+      top: 16px; height: 10px;
+      border: 1.5px solid rgba(60, 40, 10, 0.18);
+      border-radius: 5px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .gauge-label {
+      position: absolute;
+      top: 0;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem;
+      color: var(--muted);
+      transform: translateX(-50%);
+    }
+    .gauge-label-0   { left: 8.3%; }
+    .gauge-label-100 { left: 91.7%; }
+    .gauge-tri {
+      position: absolute;
+      top: 28px;
+      font-size: 0.5rem;
+      color: var(--text);
+      transform: translateX(-50%);
+      transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1;
+      z-index: 3;
+    }
+    .gauge-score {
+      position: absolute;
+      top: 37px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 400;
+      color: var(--text);
+      transform: translateX(-50%);
+      transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 3;
     }
 
     /* ── Carte forward : fenêtre + timeline ── */
@@ -160,10 +206,12 @@
       margin-bottom: 0.35rem;
     }
     .forward-window {
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 0.72rem;
+      font-family: 'DM Mono', monospace;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       color: var(--text);
-      margin-bottom: 1rem;
     }
     .timeline-bar { display: flex; height: 22px; gap: 2px; align-items: flex-end; }
     .timeline-bar > div { flex: 1; min-width: 2px; border-radius: 2px; height: 100%; cursor: default; }
@@ -181,8 +229,8 @@
       display: flex;
       justify-content: center;
       gap: 1.2rem;
-      padding: 0.5rem 0.25rem;
-      margin-bottom: 0.5rem;
+      padding: 0.25rem 0.25rem 0;
+      margin-bottom: -0.5rem;
     }
     .tech-item {
       display: flex;
@@ -296,38 +344,46 @@
         <div class="verdict-status" id="verdictStatus">—</div>
         <div class="verdict-hint" id="verdictHint"></div>
       </div>
-      <div class="score-row">
-        <div class="bar-track"><div class="bar-fill" id="barFill" style="width: 0%"></div></div>
-        <span class="score-small" id="scoreValue">—</span>
+    </div>
+
+    <!-- ── Carte score ── -->
+    <div class="card">
+      <div class="gauge-title">Green score du réseau</div>
+      <div class="gauge-outer">
+        <span class="gauge-label gauge-label-0">0</span>
+        <span class="gauge-label gauge-label-100">100</span>
+        <div class="gauge-bg"></div>
+        <div class="gauge-fill" id="gaugeFill"></div>
+        <div class="gauge-outline"></div>
+        <span class="gauge-tri" id="gaugeTri">▲</span>
+        <span class="gauge-score" id="gaugeScore">—</span>
+      </div>
+      <div class="tech-strip">
+        <div class="tech-item">
+          <span class="tech-label">Gaz</span>
+          <span class="tech-val" id="detailGas">—</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-label">Nuc</span>
+          <span class="tech-val" id="detailNuclear">—</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-label">Stock</span>
+          <span class="tech-val" id="detailStorage">—</span>
+        </div>
       </div>
     </div>
 
     <!-- ── Carte forward : fenêtre verte + timeline ── -->
     <div class="forward-card" id="forwardCard">
-      <div class="forward-section-label">Prochaine fenêtre verte</div>
-      <div class="forward-window" id="forwardWindow">—</div>
       <div class="forward-section-label">Évolution prévue</div>
       <div class="timeline-bar" id="timelineBar"></div>
       <div class="timeline-labels">
         <span id="tlLabelStart"></span>
         <span id="tlLabelEnd"></span>
       </div>
-    </div>
-
-    <!-- ── Détails techniques discrets ── -->
-    <div class="tech-strip">
-      <div class="tech-item">
-        <span class="tech-label">Gaz</span>
-        <span class="tech-val" id="detailGas">—</span>
-      </div>
-      <div class="tech-item">
-        <span class="tech-label">Nuc</span>
-        <span class="tech-val" id="detailNuclear">—</span>
-      </div>
-      <div class="tech-item">
-        <span class="tech-label">Stock</span>
-        <span class="tech-val" id="detailStorage">—</span>
-      </div>
+      <div class="forward-section-label" style="margin-top: 0.8rem;">Prochaine fenêtre la + verte</div>
+      <div class="forward-window" id="forwardWindow">—</div>
     </div>
 
     <div class="footer">
@@ -377,8 +433,26 @@
       $("verdictStatus").style.color = cfg.color
       $("verdictHint").textContent = cfg.hint
 
-      $("scoreValue").textContent = `${Math.round(data.score)} / 150`
-      $("barFill").style.width = `${Math.min(100, (data.score / 150) * 100)}%`
+      // Gauge: -10..110 mapped across full width
+      // score 0 = 8.3%, score 100 = 91.7% (range = 83.4%)
+      const score = data.score
+      const toPos = s => 8.3 + (s / 100) * 83.4
+      const scorePct = Math.max(1, Math.min(99, toPos(score)))
+      const zeroPct = 8.3
+
+      const fill = $("gaugeFill")
+      fill.style.background = cfg.color
+      if (score >= 0) {
+        fill.style.left = `${zeroPct}%`
+        fill.style.width = `${scorePct - zeroPct}%`
+      } else {
+        fill.style.left = `${scorePct}%`
+        fill.style.width = `${zeroPct - scorePct}%`
+      }
+
+      $("gaugeTri").style.left = `${scorePct}%`
+      $("gaugeScore").style.left = `${scorePct}%`
+      $("gaugeScore").textContent = `${Math.round(score)}%`
 
       const d = data.details || {}
       $("detailGas").textContent     = d.gasCCG_use_rate !== undefined ? pct(d.gasCCG_use_rate) : "—"
@@ -420,18 +494,17 @@
       const today = new Date(now); today.setHours(0,0,0,0)
       const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
 
-      let when
+      let prefix = ""
       if (now >= start && now <= end) {
-        when = `En cours → ${hm(end)}`
-      } else if (startDay.getTime() === today.getTime() && start.getHours() <= 22) {
-        when = `${hm(start)} → ${hm(end)}`
+        prefix = "En cours · "
       } else if (startDay.getTime() === tomorrow.getTime() && start.getHours() > 6) {
-        when = `Demain ${hm(start)}`
+        prefix = "Demain · "
       } else if (startDay.getTime() <= tomorrow.getTime() && (start.getHours() >= 22 || start.getHours() < 6)) {
-        when = `Cette nuit ${hm(start)}`
-      } else {
-        when = start.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + ` ${hm(start)}`
+        prefix = "Cette nuit · "
+      } else if (startDay.getTime() !== today.getTime()) {
+        prefix = start.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + " · "
       }
+      const when = `${prefix}${hm(start)} → ${hm(end)}`
 
       $("forwardWindow").textContent = when
     }
