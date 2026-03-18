@@ -213,8 +213,26 @@
       text-transform: uppercase;
       color: var(--text);
     }
-    .timeline-bar { display: flex; height: 22px; gap: 2px; align-items: flex-end; }
-    .timeline-bar > div { flex: 1; min-width: 2px; border-radius: 2px; height: 100%; cursor: default; }
+    .timeline-bar { display: flex; height: 22px; gap: 2px; align-items: flex-end; position: relative; }
+    .timeline-bar > div { flex: 1; min-width: 2px; border-radius: 2px; height: 100%; cursor: pointer; }
+    .tl-tooltip {
+      position: absolute;
+      top: -20px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1px 5px;
+      transform: translateX(-50%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+      z-index: 5;
+    }
+    .tl-tooltip.visible { opacity: 1; }
     .timeline-labels {
       display: flex;
       justify-content: space-between;
@@ -468,17 +486,43 @@
 
     const TIMELINE_COLORS = { green: "#4caf50", orange: "#ff9800", red: "#f44336" }
 
+    let _tlTooltipTimer = null
+
     function renderTimeline(data) {
       const bar = $("timelineBar")
       if (!data.slots || data.slots.length === 0) return
       bar.innerHTML = ""
       const hm = d => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+
+      // Tooltip element
+      const tip = document.createElement("span")
+      tip.className = "tl-tooltip"
+      tip.id = "tlTooltip"
+      bar.appendChild(tip)
+
       for (const slot of data.slots) {
         const d = document.createElement("div")
         d.style.background = TIMELINE_COLORS[slot.color] || TIMELINE_COLORS.orange
         d.title = hm(slot.t)
+        d.addEventListener("click", e => {
+          e.stopPropagation()
+          const rect = d.getBoundingClientRect()
+          const barRect = bar.getBoundingClientRect()
+          tip.textContent = hm(slot.t)
+          tip.style.left = `${rect.left - barRect.left + rect.width / 2}px`
+          tip.classList.add("visible")
+          clearTimeout(_tlTooltipTimer)
+          _tlTooltipTimer = setTimeout(() => tip.classList.remove("visible"), 2000)
+        })
         bar.appendChild(d)
       }
+
+      // Dismiss on tap elsewhere
+      document.addEventListener("click", () => {
+        const t = $("tlTooltip")
+        if (t) t.classList.remove("visible")
+      })
+
       $("tlLabelStart").textContent = hm(data.slots[0].t)
       $("tlLabelEnd").textContent = hm(data.slots[data.slots.length - 1].t)
     }
