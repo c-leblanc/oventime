@@ -53,8 +53,8 @@ async def test_no_alert_when_score_normal(mock_web):
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
 async def test_alert_on_abundance(mock_web):
     """Score au-dessus de LEAF_THRESHOLD → alerte abondance."""
-    insert_diag(score=LEAF_THRESHOLD + 10)
     n = Notifier()
+    insert_diag(score=LEAF_THRESHOLD + 10)
     await n.check_and_notify()
 
     mock_web.assert_called_once()
@@ -65,8 +65,8 @@ async def test_alert_on_abundance(mock_web):
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
 async def test_alert_on_tension(mock_web):
     """Score en-dessous de FIRE_THRESHOLD → alerte tension."""
-    insert_diag(score=FIRE_THRESHOLD - 5)
     n = Notifier()
+    insert_diag(score=FIRE_THRESHOLD - 5)
     await n.check_and_notify()
 
     mock_web.assert_called_once()
@@ -77,8 +77,8 @@ async def test_alert_on_tension(mock_web):
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
 async def test_no_duplicate_alert(mock_web):
     """Même timestamp vu deux fois → pas de double alerte."""
-    insert_diag(score=LEAF_THRESHOLD + 10)
     n = Notifier()
+    insert_diag(score=LEAF_THRESHOLD + 10)
 
     await n.check_and_notify()
     await n.check_and_notify()
@@ -90,8 +90,8 @@ async def test_no_duplicate_alert(mock_web):
 @patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
 async def test_return_to_normal_after_abundance(mock_web):
     """Score redescend sous LEAF → alerte 'retour à la normale'."""
-    insert_diag(score=LEAF_THRESHOLD + 10, minutes_offset=-30)
     n = Notifier()
+    insert_diag(score=LEAF_THRESHOLD + 10, minutes_offset=-30)
     await n.check_and_notify()
     assert n.last_alert_high is True
 
@@ -108,4 +108,17 @@ async def test_no_alert_when_cache_empty(mock_web):
     n = Notifier()
     await n.check_and_notify()
 
+    mock_web.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch.object(Notifier, "_notify_web", new_callable=AsyncMock)
+async def test_no_duplicate_alert_after_restart(mock_web):
+    """Simule un redémarrage : le score est déjà en zone d'alerte dans le cache,
+    le Notifier restaure l'état et ne renvoie pas la notif."""
+    insert_diag(score=LEAF_THRESHOLD + 10)
+    n = Notifier()  # _restore_state lit le cache
+    assert n.last_alert_high is True
+
+    await n.check_and_notify()
     mock_web.assert_not_called()

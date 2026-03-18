@@ -45,6 +45,7 @@ LEAF_THRESHOLD = 100 # Score above which an automated "abundance" message is sen
 GREEN_ORANGE_THRESHOLD = 70
 ORANGE_RED_THRESHOLD = 30
 FIRE_THRESHOLD = 10 # Score below which an automated "tension" message is sent
+ALERT_HYSTERESIS = 5 # Marge pour éviter le ping-pong de notifications autour des seuils
 
 ## Best window determination
 WINDOW_METHOD = "otsu"

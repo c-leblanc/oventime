@@ -5,7 +5,7 @@ from py_vapid import Vapid
 from urllib.parse import urlparse
 
 from oventime.cache.cache import get_fulldiag, get_wsubs, remove_wsubs
-from oventime.config import LEAF_THRESHOLD, FIRE_THRESHOLD, EMAIL, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY
+from oventime.config import LEAF_THRESHOLD, FIRE_THRESHOLD, ALERT_HYSTERESIS, EMAIL, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY
 from oventime.utils import to_utc_timestamp
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,21 @@ class Notifier:
         self.last_seen_ts:   str | None = None
         self.last_alert_high: bool = False
         self.last_alert_low:  bool = False
+        self._restore_state()
+
+    def _restore_state(self):
+        """Restaure les flags depuis le cache pour éviter de renvoyer
+        des notifications après un redémarrage de l'application."""
+        try:
+            diag = get_fulldiag()
+            if diag is None:
+                return
+            score = diag["score"]
+            self.last_seen_ts    = diag["ts"]
+            self.last_alert_high = score > LEAF_THRESHOLD
+            self.last_alert_low  = score < FIRE_THRESHOLD
+        except Exception:
+            pass
 
     async def check_and_notify(self):
         """
@@ -43,12 +58,12 @@ class Notifier:
         title = None
         text = None
 
-        if score <= LEAF_THRESHOLD and self.last_alert_high:
+        if score <= LEAF_THRESHOLD - ALERT_HYSTERESIS and self.last_alert_high:
             title = "❌ Retour à la normale"
             text = "Fin de la période d'abondance ⚡🍃"
             self.last_alert_high = False
 
-        elif score >= FIRE_THRESHOLD and self.last_alert_low:
+        elif score >= FIRE_THRESHOLD + ALERT_HYSTERESIS and self.last_alert_low:
             title = "✅ Retour à la normale"
             text = "Fin de la période de forte tension 🔥🏭"
             self.last_alert_low = False
