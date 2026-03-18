@@ -1,5 +1,6 @@
 import httpx
-import pandas as pd
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from oventime.utils import time_interpreter, to_utc_timestamp
 from oventime.config import (
@@ -23,7 +24,7 @@ def msg_diagnostic(
         at_time: str = None,
         tz_output: str = TIMEZONE
         ):
-    
+
     target_time = time_interpreter(at_time)
     r = httpx.get(
         f"{API_BASE_URL}/diagnostic",
@@ -31,10 +32,11 @@ def msg_diagnostic(
         timeout=2
         )
     r.raise_for_status()
-    
+
     diag = r.json()
-    
-    diag['ts'] = to_utc_timestamp(diag['ts']).tz_convert(tz_output)
+
+    tz = ZoneInfo(tz_output)
+    diag['ts'] = to_utc_timestamp(diag['ts']).astimezone(tz)
 
     # ------------------------------------------------------------
     # Qualitative interpretation for real-time feedback
@@ -65,23 +67,24 @@ def msg_price_window(
         timeout=2
         )
     r.raise_for_status()
-    
+
     pwind = r.json()
 
-    start = to_utc_timestamp(pwind['nextwind_start']).tz_convert(tz_output)
-    end = to_utc_timestamp(pwind['nextwind_end']).tz_convert(tz_output)
+    tz = ZoneInfo(tz_output)
+    start = to_utc_timestamp(pwind['nextwind_start']).astimezone(tz)
+    end = to_utc_timestamp(pwind['nextwind_end']).astimezone(tz)
 
     start_str = start.strftime("%H:%M")
     end_str = end.strftime("%H:%M")
 
-    now = pd.Timestamp.now(tz_output).normalize()
-    start_day = start.normalize()
+    now = datetime.now(tz).replace(hour=0, minute=0, second=0, microsecond=0)
+    start_day = start.replace(hour=0, minute=0, second=0, microsecond=0)
 
     if start_day == now and start.hour <= 22:
-        when = "aujourd’hui"
-    elif start_day == now + pd.Timedelta(days=1) and start.hour > 6:
+        when = "aujourd'hui"
+    elif start_day == now + timedelta(days=1) and start.hour > 6:
         when = "demain"
-    elif start_day <= now + pd.Timedelta(days=1) and (start.hour >= 22 or start.hour < 6):
+    elif start_day <= now + timedelta(days=1) and (start.hour >= 22 or start.hour < 6):
         when = "cette nuit"
     else:
         # fallback explicite
@@ -94,4 +97,3 @@ def msg_price_window(
     )
 
     return text
-

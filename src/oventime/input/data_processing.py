@@ -1,44 +1,62 @@
-import pandas as pd
+import math
 from pathlib import Path
 
 from oventime.config import DATA_DIR
+from oventime.input import data_storage
 
 _cache = {"data": None, "mtime": None}
 
-def init_data():
-    output_path = Path(DATA_DIR / "processed/init_data.parquet")
-    input_path = Path(DATA_DIR / "raw/eco2mix.parquet")
+AGGREGATED_COLS = ["RENEWABLE", "NUCLEAR", "STORAGE", "GAS_CCG", "GAS_TAC", "OTHER"]
 
-    # Recalcule le parquet traité si les données brutes ont changé
-    if not output_path.exists() or input_path.stat().st_mtime > output_path.stat().st_mtime:
-        data = pd.read_parquet(input_path)
-        
-        data = data.drop(["perimetre","nature","date","heure"], axis=1)
-        data = data.drop(['ech_physiques','taux_co2', 'ech_comm_angleterre', 'ech_comm_espagne','ech_comm_italie', 'ech_comm_suisse', 'ech_comm_allemagne_belgique'], axis=1)
 
-        data["RENEWABLE"] = data["eolien"] + data["solaire"] + data["hydraulique_fil_eau_eclusee"]
-        data["NUCLEAR"] = data["nucleaire"]
-        data["STORAGE"] = data['hydraulique_lacs'] + data['hydraulique_step_turbinage'] + data['pompage'] + data['destockage_batterie'] + data['stockage_batterie']
-        data["GAS_CCG"] = data['gaz_ccg']
-        data["GAS_TAC"] = data['gaz_tac']
-        data["OTHER"] = data['charbon']+data['gaz_autres']+data['fioul_tac']+data['fioul_autres']+data['gaz_cogen']+data['fioul_cogen']+data["bioenergies"]
+def _safe_sum(*values):
+    """Sum values, returning None if any is None or NaN."""
+    for v in values:
+        if v is None:
+            return None
+        if isinstance(v, float) and math.isnan(v):
+            return None
+    return sum(values)
 
-        data = data[["RENEWABLE","NUCLEAR","STORAGE","GAS_CCG","GAS_TAC","OTHER"]]
-        
-        # drop the observations where data is not available
-        data = data.dropna(how="any")
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        data.to_parquet(output_path)
-        _cache["data"] = data
-        _cache["mtime"] = output_path.stat().st_mtime
-        return data
+def init_data() -> list[dict]:
+    data_storage.init_raw_db()
+    db_path = data_storage.RAW_DB_PATH
 
-    # Recharge depuis disque uniquement si le fichier a changé depuis le dernier appel
-    current_mtime = output_path.stat().st_mtime
-    if _cache["data"] is None or _cache["mtime"] != current_mtime:
-        _cache["data"] = pd.read_parquet(output_path)
-        _cache["mtime"] = current_mtime
-    
-    return _cache["data"]
+    if not db_path.exists():
+        return []
 
+    current_mtime = db_path.stat().st_mtime
+    if _cache["data"] is not None and _cache["mtime"] == current_mtime:
+        return _cache["data"]
+
+    rows = data_storage.read_eco2mix()
+
+    result = []
+    for row in rows:
+        agg = {"date_heure": row["date_heure"]}
+        agg["RENEWABLE"] = _safe_sum(
+            row.get("eolien"), row.get("solaire"), row.get("hydraulique_fil_eau_eclusee")
+        )
+        agg["NUCLEAR"] = row.get("nucleaire")
+        agg["STORAGE"] = _safe_sum(
+            row.get("hydraulique_lacs"), row.get("hydraulique_step_turbinage"),
+            row.get("pompage"), row.get("destockage_batterie"), row.get("stockage_batterie")
+        )
+        agg["GAS_CCG"] = row.get("gaz_ccg")
+        agg["GAS_TAC"] = row.get("gaz_tac")
+        agg["OTHER"] = _safe_sum(
+            row.get("charbon"), row.get("gaz_autres"), row.get("fioul_tac"),
+            row.get("fioul_autres"), row.get("gaz_cogen"), row.get("fioul_cogen"),
+            row.get("bioenergies")
+        )
+
+        # dropna(how="any") equivalent: skip rows where any aggregated value is None
+        if any(agg.get(c) is None for c in AGGREGATED_COLS):
+            continue
+
+        result.append(agg)
+
+    _cache["data"] = result
+    _cache["mtime"] = current_mtime
+    return result

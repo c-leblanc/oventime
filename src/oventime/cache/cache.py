@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 import time
 
+from zoneinfo import ZoneInfo
+
 from oventime.utils import to_epoch, to_utc_timestamp
 from oventime.config import TIMEZONE, DATA_DIR
 
@@ -126,7 +128,7 @@ def get_fulldiag(target_time=None, tz_output=TIMEZONE):
         return None
 
     return {
-        "ts": to_utc_timestamp(row[0]).tz_convert(tz_output),
+        "ts": to_utc_timestamp(row[0]).astimezone(ZoneInfo(tz_output)),
         "status": row[1],
         "score": row[2],
         "details":{
@@ -164,7 +166,7 @@ def get_status(target_time=None, tz_output=TIMEZONE):
         return None
 
     return {
-        "ts": to_utc_timestamp(row[0]).tz_convert(tz_output),
+        "ts": to_utc_timestamp(row[0]).astimezone(ZoneInfo(tz_output)),
         "status": row[1]
     }
 
@@ -191,9 +193,9 @@ def get_nextwindow(target_time=None, tz_output=TIMEZONE):
         return None
 
     return {
-        "ts": to_utc_timestamp(row[0]).tz_convert(tz_output),
-        "nextwind_start": to_utc_timestamp(row[1]).tz_convert(tz_output),
-        "nextwind_end": to_utc_timestamp(row[2]).tz_convert(tz_output)
+        "ts": to_utc_timestamp(row[0]).astimezone(ZoneInfo(tz_output)),
+        "nextwind_start": to_utc_timestamp(row[1]).astimezone(ZoneInfo(tz_output)),
+        "nextwind_end": to_utc_timestamp(row[2]).astimezone(ZoneInfo(tz_output))
     }
 
 def get_last_ts():

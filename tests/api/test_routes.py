@@ -1,9 +1,10 @@
 import pytest
-import pandas as pd
+from datetime import datetime, timezone, timedelta
 from fastapi.testclient import TestClient
 
 from oventime.cache import cache
 from oventime.api.routes import app
+from oventime.utils import floor_dt
 
 
 # ── Fixture ──────────────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ def auth_headers():
 
 def insert_sample_data():
     """Insère un diagnostic de test dans le cache."""
-    now = pd.Timestamp.now(tz="UTC").floor("15min")
+    now = floor_dt(datetime.now(timezone.utc))
     cache.save({
         "time": now,
         "status": "green",
@@ -43,8 +44,8 @@ def insert_sample_data():
         "storage_phase": 0.1,
         "storage_use_rate": 0.15,
         "nuclear_use_rate": 0.8,
-        "nextwind_start": now + pd.Timedelta(hours=2),
-        "nextwind_end": now + pd.Timedelta(hours=5),
+        "nextwind_start": now + timedelta(hours=2),
+        "nextwind_end": now + timedelta(hours=5),
         "nextwind_method": "otsu",
     })
 
@@ -116,24 +117,19 @@ def test_admin_with_bad_token_returns_401(client):
 
 def test_admin_tsubs_crud(client, auth_headers):
     """Cycle complet : lister → ajouter → vérifier → supprimer → vérifier."""
-    # Liste vide au départ
     r = client.get("/tsubs", headers=auth_headers)
     assert r.json()["chat_ids"] == []
 
-    # Ajout
     r = client.post("/tsubs/12345", headers=auth_headers)
     assert r.status_code == 200
     assert r.json()["chat_id"] == 12345
 
-    # Vérification
     r = client.get("/tsubs", headers=auth_headers)
     assert 12345 in r.json()["chat_ids"]
 
-    # Suppression
     r = client.delete("/tsubs/12345", headers=auth_headers)
     assert r.status_code == 200
 
-    # Vérifie que c'est bien supprimé
     r = client.get("/tsubs", headers=auth_headers)
     assert 12345 not in r.json()["chat_ids"]
 

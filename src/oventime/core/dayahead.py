@@ -1,59 +1,44 @@
-import numpy as np
-import pandas as pd
+import math
+from datetime import datetime, timezone, timedelta
 
-from oventime.config import PROJECT_ROOT, WINDOW_RANGE, WINDOW_METHOD, OTSU_SEVERITY
-from oventime.utils import to_utc_timestamp
+from oventime.config import WINDOW_RANGE, WINDOW_METHOD, OTSU_SEVERITY
+from oventime.utils import to_utc_timestamp, floor_dt
+from oventime.input import data_storage
 
 
-def optimal_threshold_otsu(prices, severity=OTSU_SEVERITY):
+def optimal_threshold_otsu(prices: list[float], severity=OTSU_SEVERITY):
     """
     Compute an optimal low-price threshold using an Otsu-like criterion.
 
-    The threshold maximizes the between-class variance between
-    low-price and high-price groups.
-
     Parameters
     ----------
-    prices : pd.Series
-        Time-indexed price series.
+    prices : list[float]
+        Price values (already filtered for None/NaN).
     severity : float >= 0
-        Severity parameter.
-        - 1.0 : standard Otsu
-        - >1  : more selective (lower threshold)
-        - <1  : more permissive
-
-    Returns
-    -------
-    float
-        Optimal threshold value.
-
-    Raises
-    ------
-    ValueError
-        If the threshold cannot be determined (e.g. constant or empty series).
+        Severity parameter. 1.0 = standard Otsu, >1 = more selective, <1 = more permissive.
     """
-    values = prices.dropna().values
+    values = prices
 
     if len(values) == 0:
         raise ValueError("Empty price series: cannot compute Otsu threshold.")
 
-    candidates = np.unique(values)
+    candidates = sorted(set(values))
 
-    best_tau, best_score = None, -np.inf
+    best_tau, best_score = None, -math.inf
 
     for tau in candidates:
-        low = values[values <= tau]
-        high = values[values > tau]
+        low = [v for v in values if v <= tau]
+        high = [v for v in values if v > tau]
 
-        # Both groups must be non-empty
         if len(low) == 0 or len(high) == 0:
             continue
 
         pL = len(low) / len(values)
         pH = 1 - pL
 
-        # Between-class variance
-        score = (pL ** (1/severity)) * pH * (low.mean() - high.mean())**2
+        mean_low = sum(low) / len(low)
+        mean_high = sum(high) / len(high)
+        score = (pL ** (1/severity)) * pH * (mean_low - mean_high)**2
 
         if score > best_score:
             best_score, best_tau = score, tau
@@ -63,8 +48,9 @@ def optimal_threshold_otsu(prices, severity=OTSU_SEVERITY):
 
     return best_tau
 
+
 def price_window(
-    now: pd.Timestamp = None,
+    now: datetime = None,
     window_range: int = WINDOW_RANGE,
     method: str = WINDOW_METHOD,
     severity: float = OTSU_SEVERITY,
@@ -73,82 +59,65 @@ def price_window(
 ):
     """
     Identify the longest contiguous low-price time window
-    within the next `max_window` horizon.
-
-    Parameters
-    ----------
-    max_window : pd.Timedelta
-        Maximum forward-looking time window.
-    method : {"otsu", "arbitrary"}
-        Method used to determine the low-price threshold.
-    relative_low : float
-        Relative threshold position (only used if method="arbitrary").
-    absolute_low : float
-        Absolute minimum price threshold (only used if method="arbitrary").
-
-    Returns
-    -------
-    (pd.Timestamp, pd.Timestamp, int)
-        Start time, end time, window range effectively considered (available prices).
-
-    Raises
-    ------
-    ValueError
-        If no valid low-price window can be identified.
+    within the next `window_range` hours.
     """
+    data_storage.init_raw_db()
 
-    # ------------------------------------------------------------------
-    # 1. Load and truncate price data
-    # ------------------------------------------------------------------
-    prices = pd.read_parquet(PROJECT_ROOT / "data/raw/DAprices.parquet")["price"]
+    if now is None:
+        now = datetime.now(timezone.utc)
+    now = floor_dt(to_utc_timestamp(now))
+    limit = now + timedelta(hours=window_range)
 
-    if now is None: now = pd.Timestamp.now()
-    now = to_utc_timestamp(now).floor("15min")
-    max_window=pd.Timedelta(hours=window_range)
-    limit = now + max_window
+    # Load and filter prices
+    all_prices = data_storage.read_prices(start=now, end=limit)
 
-    prices = prices.loc[(prices.index >= now) & (prices.index <= limit)]
-
-    if prices.empty:
+    if not all_prices:
         raise ValueError("No price data available in the selected time window.")
-    else: eff_window = int((max(prices.index) - now)/pd.Timedelta(hours=1))
 
-    # ------------------------------------------------------------------
-    # 2. Determine the low-price threshold
-    # ------------------------------------------------------------------
+    eff_window = int((all_prices[-1]["date_heure"] - now) / timedelta(hours=1))
+
+    # Extract price values (filter None)
+    price_values = [r["price"] for r in all_prices if r["price"] is not None]
+
+    if not price_values:
+        raise ValueError("No valid price data in the selected time window.")
+
+    # Determine threshold
     method = method.lower()
 
     if method == "arbitrary":
-        min_price = prices.min()
-        max_price = prices.max()
+        min_price = min(price_values)
+        max_price = max(price_values)
         relative_threshold = min_price + relative_low * (max_price - min_price)
         threshold = max(relative_threshold, absolute_low)
 
     elif method == "otsu":
-        threshold = optimal_threshold_otsu(prices, severity=severity)
+        threshold = optimal_threshold_otsu(price_values, severity=severity)
 
     else:
         raise ValueError(f"Invalid method '{method}' for threshold determination.")
 
-    # ------------------------------------------------------------------
-    # 3. Identify the longest contiguous low-price window
-    # ------------------------------------------------------------------
-    mask = prices <= threshold
+    # Find contiguous low-price segments
+    segments = []
+    current_segment = []
 
-    if not mask.any():
+    for row in all_prices:
+        if row["price"] is not None and row["price"] <= threshold:
+            current_segment.append(row)
+        else:
+            if current_segment:
+                segments.append(current_segment)
+            current_segment = []
+    if current_segment:
+        segments.append(current_segment)
+
+    if not segments:
         raise ValueError("No prices below the computed threshold.")
 
-    # Identify contiguous True segments
-    group_id = (mask.ne(mask.shift(fill_value=False)) & mask).cumsum()
-
-    low_groups = prices[mask].groupby(group_id[mask])
-
-    # Select the longest group (by number of time steps)
-    best_group = max(low_groups, key=lambda kv: len(kv[1]))[1]
-
-    start_time = best_group.index[0]
-    end_time = best_group.index[-1] + pd.Timedelta(minutes=15)
-    #avg_price = best_group.mean()
+    # Select longest segment
+    best = max(segments, key=len)
+    start_time = best[0]["date_heure"]
+    end_time = best[-1]["date_heure"] + timedelta(minutes=15)
 
     return {
         "time": now,
@@ -158,9 +127,8 @@ def price_window(
         "method": method
     }
 
-def output(# pour ajouter d'autres outputs plus tard, et tout renvoyer au cache d'un coup
-        now: pd.Timestamp = None
-        ):
+
+def output(now: datetime = None):
     pwind = price_window(now=now)
     return {
         "time": pwind["time"],
@@ -168,5 +136,3 @@ def output(# pour ajouter d'autres outputs plus tard, et tout renvoyer au cache 
         "nextwind_end": pwind["end_time"],
         "nextwind_method": pwind["method"]
     }
-
-
