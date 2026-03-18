@@ -4,7 +4,6 @@ from fastapi.testclient import TestClient
 
 from oventime.cache import cache
 from oventime.api.routes import app
-from oventime.config import INTERNAL_API_TOKEN
 
 
 # ── Fixture ──────────────────────────────────────────────────────────────────
@@ -25,7 +24,7 @@ def client():
 @pytest.fixture
 def auth_headers():
     """Headers avec le token admin pour les endpoints protégés."""
-    return {"x-internal-token": INTERNAL_API_TOKEN}
+    return {"x-internal-token": "test_token"}
 
 
 # ── Helper ───────────────────────────────────────────────────────────────────
