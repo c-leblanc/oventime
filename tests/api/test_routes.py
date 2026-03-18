@@ -21,6 +21,12 @@ def client():
     return TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _set_internal_token(monkeypatch):
+    """Force le token admin à une valeur connue, quel que soit le .env local."""
+    monkeypatch.setattr("oventime.api.routes.INTERNAL_API_TOKEN", "test_token")
+
+
 @pytest.fixture
 def auth_headers():
     """Headers avec le token admin pour les endpoints protégés."""
