@@ -134,13 +134,13 @@
     .gauge-bg {
       position: absolute;
       left: 8.3%; right: 8.3%;
-      top: 16px; height: 10px;
+      top: 22px; height: 10px;
       background: var(--border);
       border-radius: 5px;
     }
     .gauge-fill {
       position: absolute;
-      top: 16px; height: 10px;
+      top: 22px; height: 10px;
       border-radius: 5px;
       z-index: 1;
       transition: left 1s cubic-bezier(0.4, 0, 0.2, 1),
@@ -150,35 +150,15 @@
     .gauge-outline {
       position: absolute;
       left: 8.3%; right: 8.3%;
-      top: 16px; height: 10px;
+      top: 22px; height: 10px;
       border: 1.5px solid rgba(60, 40, 10, 0.18);
       border-radius: 5px;
       z-index: 2;
       pointer-events: none;
     }
-    .gauge-label {
-      position: absolute;
-      top: 0;
-      font-family: 'DM Mono', monospace;
-      font-size: 0.55rem;
-      color: var(--muted);
-      transform: translateX(-50%);
-    }
-    .gauge-label-0   { left: 8.3%; }
-    .gauge-label-100 { left: 91.7%; }
-    .gauge-tri {
-      position: absolute;
-      top: 28px;
-      font-size: 0.5rem;
-      color: var(--text);
-      transform: translateX(-50%);
-      transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
-      line-height: 1;
-      z-index: 3;
-    }
     .gauge-score {
       position: absolute;
-      top: 37px;
+      top: 0;
       font-family: 'DM Mono', monospace;
       font-size: 0.65rem;
       font-weight: 400;
@@ -187,6 +167,26 @@
       transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 3;
     }
+    .gauge-tri {
+      position: absolute;
+      top: 14px;
+      font-size: 0.5rem;
+      color: var(--text);
+      transform: translateX(-50%);
+      transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1;
+      z-index: 3;
+    }
+    .gauge-label {
+      position: absolute;
+      top: 37px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem;
+      color: var(--muted);
+      transform: translateX(-50%);
+    }
+    .gauge-label-0   { left: 8.3%; }
+    .gauge-label-100 { left: 91.7%; }
 
     /* ── Carte forward : fenêtre + timeline ── */
     .forward-card {
@@ -366,14 +366,14 @@
 
     <!-- ── Carte score ── -->
     <div class="card">
-      <div class="gauge-title">Green score du réseau</div>
+      <div class="gauge-title">Score - Électricité décarbonée à...</div>
       <div class="gauge-outer">
         <span class="gauge-label gauge-label-0">0</span>
         <span class="gauge-label gauge-label-100">100</span>
         <div class="gauge-bg"></div>
         <div class="gauge-fill" id="gaugeFill"></div>
         <div class="gauge-outline"></div>
-        <span class="gauge-tri" id="gaugeTri">▲</span>
+        <span class="gauge-tri" id="gaugeTri">▼</span>
         <span class="gauge-score" id="gaugeScore">—</span>
       </div>
       <div class="tech-strip">
@@ -428,11 +428,11 @@
     const API_URL = ""
 
     const STATUS_CONFIG = {
-      leaf:   { emoji: "🍃", headline: "ABONDANCE !",      phrase: "Y a de l'électricité à ne savoir qu'en faire.",                          color: "#3cb96b" },
-      green:  { emoji: "🟢", headline: "CA VA",            phrase: "On tire un peu sur le gaz, mais modérément.",                             color: "#52c97e" },
-      orange: { emoji: "🟠", headline: "UN PEU TENDU",     phrase: "C'est pas le pire, mais on tire un peu sur le gaz quand même.",           color: "#e8804a" },
-      red:    { emoji: "🔴", headline: "PAS MAINTENANT",   phrase: "Le système est tendu et les centrales gaz tournent à fond.",              color: "#e05050" },
-      fire:   { emoji: "🔥", headline: "PIRE MOMENT !",    phrase: "Le système est très tendu, on a démarré les centrales les plus polluantes.", color: "#cc2e2e" },
+      leaf:   { emoji: "🍃", headline: "Abondance !",      phrase: "Y a de l'électricité à ne savoir qu'en faire.",                          color: "#3cb96b" },
+      green:  { emoji: "🟢", headline: "Ça va",            phrase: "On tire un peu sur le gaz, mais modérément.",                            color: "#52c97e" },
+      orange: { emoji: "🟠", headline: "Un peu tendu",     phrase: "C'est pas le pire, mais on tire un peu sur le gaz quand même.",          color: "#e8804a" },
+      red:    { emoji: "🔴", headline: "Pas maintenant",   phrase: "Le système est tendu et les centrales gaz tournent à fond.",             color: "#e05050" },
+      fire:   { emoji: "🔥", headline: "Forte tension !",  phrase: "On a démarré les centrales les plus polluantes.",                        color: "#cc2e2e" },
     }
 
     const $ = id => document.getElementById(id)
