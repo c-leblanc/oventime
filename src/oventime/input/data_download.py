@@ -210,7 +210,31 @@ def _parse_entsoe_prices(xml_text: str) -> list[dict]:
                 rows.append({"date_heure": dt.astimezone(timezone.utc), "price": price})
 
     rows.sort(key=lambda r: r["date_heure"])
+    rows = _interpolate_gaps(rows)
     return rows
+
+
+def _interpolate_gaps(rows: list[dict]) -> list[dict]:
+    """Fill missing 15-min slots by forward-filling the previous price."""
+    if len(rows) < 2:
+        return rows
+
+    result = [rows[0]]
+    for i in range(1, len(rows)):
+        prev = rows[i - 1]
+        curr = rows[i]
+        gap_min = (curr["date_heure"] - prev["date_heure"]).total_seconds() / 60
+        steps = int(gap_min // 15)
+
+        if steps > 1:
+            for s in range(1, steps):
+                result.append({
+                    "date_heure": prev["date_heure"] + timedelta(minutes=15 * s),
+                    "price": prev["price"],
+                })
+
+        result.append(curr)
+    return result
 
 
 def update_price_data(
