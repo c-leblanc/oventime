@@ -35,7 +35,7 @@ EMAIL = os.getenv("EMAIL","")
 TIMEZONE = "Europe/Paris"
 
 ## Data
-FORCE_RAW_REFRESH = True  # If True, delete raw.sqlite on startup to force re-download
+FORCE_RAW_REFRESH = False  # If True, delete raw.sqlite on startup to force re-download
 RETENTION_DAYS = 15 # Data to keep in memory
 FREQ_UPDATE = 5 # Frequency at which the updating background job runs
 FREQ_UPDATE_ECO2MIX = 20 # Eco2Mix Data : Time elapsed since last data that triggers an update attempt (in minutes).

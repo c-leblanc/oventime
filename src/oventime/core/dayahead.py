@@ -217,24 +217,20 @@ def price_status_thresholds(now: datetime, lookback_hours: int = 48):
     if green_prices and orange_prices:
         t1 = (_median(green_prices) + _median(orange_prices)) / 2
     elif green_prices:
-        t1 = _median(green_prices)
+        t1 = max(green_prices) # No orange observed: above the max green price becomes orange
     elif orange_prices:
-        t1 = _median(orange_prices)
+        t1 = min(orange_prices) # No green price observed: below the min orange price becomes green
     else:
-        sorted_all = sorted(all_paired_prices)
-        t1 = sorted_all[len(sorted_all) // 3]
+        t1 = min(red_prices)/2 # No green/orange price observed: below half the min red price becomes green
 
     if orange_prices and red_prices:
         t2 = (_median(orange_prices) + _median(red_prices)) / 2
     elif orange_prices:
-        t2 = max(orange_prices)
+        t2 = max(orange_prices) # No red observed: above the max price for orange becomes red
     elif red_prices:
-        t2 = _median(red_prices)
-    elif green_prices:
-        t2 = max(all_paired_prices)
+        t2 = min(red_prices) # No orange observed: below the min price for red becomes orange
     else:
-        sorted_all = sorted(all_paired_prices)
-        t2 = sorted_all[2 * len(sorted_all) // 3]
+        t2 = 2*t1  # No orange/red observed: twice the max observed becomes red
 
     # Ensure t1 <= t2
     if t1 > t2:
