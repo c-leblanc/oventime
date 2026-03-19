@@ -69,7 +69,7 @@ class Notifier:
             self.last_alert_low = False
 
         elif score > LEAF_THRESHOLD and not self.last_alert_high:
-            title = "🍃⚡ ABONDANCE ⚡🍃"
+            title = "🍃⚡ ABONDANCE"
             text = (
                 "Il y a un surplus d'électricité décarbonée sur le réseau !\n"
                 f"(Score à {time} = {score:.0f})"
@@ -77,7 +77,7 @@ class Notifier:
             self.last_alert_high = True
 
         elif score < FIRE_THRESHOLD and not self.last_alert_low:
-            title = "🔥🏭 FORTE TENSION 🔥🏭"
+            title = "🔥🏭 FORTE TENSION"
             text = (
                 "L'électricité se fait rare et on a démarré les centrales les plus polluantes !\n"
                 f"(Score à {time} = {score:.0f})"

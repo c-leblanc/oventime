@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Union
 from zoneinfo import ZoneInfo
 
@@ -112,6 +112,7 @@ def to_utc_timestamp(
     datetime
         Timezone-aware datetime in UTC
     """
+    if target_time is None: return None
 
     # 1. Epoch → UTC
     if isinstance(target_time, (int, float)):

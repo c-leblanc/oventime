@@ -1,7 +1,5 @@
 import math
-from pathlib import Path
 
-from oventime.config import DATA_DIR
 from oventime.input import data_storage
 
 _cache = {"data": None, "mtime": None}

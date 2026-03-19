@@ -1,11 +1,11 @@
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
 import logging
 
 import oventime.core.diagnostic
 import oventime.core.dayahead
 import oventime.cache.cache
 
-from oventime.utils import floor_dt, to_epoch
+from oventime.utils import to_epoch
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,8 @@
 import logging
 from fastapi import FastAPI, HTTPException, Header, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 import sqlite3
-import os
 
 logger = logging.getLogger(__name__)
 

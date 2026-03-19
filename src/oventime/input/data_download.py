@@ -3,7 +3,7 @@ import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
-from oventime.config import DATA_DIR, RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
+from oventime.config import RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
 from oventime.utils import trim_trailing_nans, floor_dt
 from oventime.input import data_storage
 
@@ -29,7 +29,7 @@ COUNTRY_EIC = {
 }
 
 
-def eco2mix_raw(start, end, limit=100, vars=None):
+def eco2mix_raw(start, end, limit=100, vars_keep=None):
     start_str = start.isoformat() if isinstance(start, datetime) else str(start)
     end_str = end.isoformat() if isinstance(end, datetime) else str(end)
     where = f"date_heure:['{start_str}' TO '{end_str}']"
@@ -40,8 +40,8 @@ def eco2mix_raw(start, end, limit=100, vars=None):
         "limit": limit,
     }
 
-    if vars is not None:
-        select_cols = ["date_heure"] + list(vars)
+    if vars_keep is not None:
+        select_cols = ["date_heure"] + list(vars_keep)
         params["select"] = ",".join(select_cols)
 
     resp = httpx.get(ECO2MIX_URL, params=params, timeout=10)
@@ -49,13 +49,13 @@ def eco2mix_raw(start, end, limit=100, vars=None):
     return resp.json()["results"]
 
 
-def eco2mix_rows(start=None, end=None, limit=100, vars=None) -> list[dict]:
+def eco2mix_rows(start=None, end=None, limit=100, vars_keep=None) -> list[dict]:
     if end is None:
         end = datetime.now(timezone.utc)
     if start is None:
         start = end - timedelta(days=RETENTION_DAYS)
 
-    raw = eco2mix_raw(start=start, end=end, limit=limit, vars=vars)
+    raw = eco2mix_raw(start=start, end=end, limit=limit, vars_keep=vars_keep)
 
     if not raw:
         return []

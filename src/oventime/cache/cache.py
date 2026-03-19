@@ -1,6 +1,4 @@
 import sqlite3
-import json
-from pathlib import Path
 import time
 
 from zoneinfo import ZoneInfo
@@ -192,6 +190,8 @@ def get_nextwindow(target_time=None, tz_output=TIMEZONE):
     conn.close()
 
     if row is None:
+        return None
+    if row[1] is None or row[2] is None:
         return None
 
     return {
