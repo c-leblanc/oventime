@@ -294,6 +294,14 @@
     }
     .refresh-btn:hover { background: rgba(245,166,35,0.22); transform: scale(1.03); }
     .refresh-btn:active { transform: scale(0.97); }
+    .stale-msg {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem;
+      color: #e05050;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
     .error-msg {
       font-family: 'DM Mono', monospace;
       font-size: 0.65rem;
@@ -406,7 +414,10 @@
     </div>
 
     <div class="footer">
-      <span class="timestamp" id="timestamp">—</span>
+      <div>
+        <span class="timestamp" id="timestamp">—</span>
+        <div class="stale-msg" id="staleMsg" style="display:none">Pas de données récentes disponibles</div>
+      </div>
       <button class="refresh-btn" onclick="fetchData()">↻ Actualiser</button>
     </div>
 
@@ -438,6 +449,8 @@
 
     const $ = id => document.getElementById(id)
     const pct = v => v !== null && v !== undefined ? `${Math.round(v * 100)}%` : "—"
+
+    let _now = new Date()  // référence temporelle = timestamp des dernières données
 
     function setAccent(color) {
       document.documentElement.style.setProperty("--accent", color)
@@ -479,8 +492,10 @@
       $("detailStorage").textContent = d.storage_use_rate !== undefined ? pct(d.storage_use_rate) : "—"
 
       if (data.ts) {
-        const dt = new Date(data.ts)
-        $("timestamp").textContent = dt.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+        _now = new Date(data.ts)
+        $("timestamp").textContent = _now.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+        const stale = (new Date() - _now) > 60 * 60 * 1000
+        $("staleMsg").style.display = stale ? "block" : "none"
       }
       $("errorMsg").style.display = "none"
     }
@@ -531,7 +546,7 @@
     function renderWindow(data) {
       const start = new Date(data.nextwind_start)
       const end = new Date(data.nextwind_end)
-      const now = new Date()
+      const now = _now
 
       const hm = d => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
 
@@ -562,7 +577,6 @@
       } catch (e) {
         console.error(e)
         $("errorMsg").style.display = "block"
-        render(MOCK_DATA)
       }
       try {
         const res = await fetch(`${API_URL}/next/window`)
@@ -576,13 +590,6 @@
       } catch (e) {
         console.error("prices/timeline:", e)
       }
-    }
-
-    const MOCK_DATA = {
-      ts: new Date().toISOString(),
-      status: "green",
-      score: 87.4,
-      details: { gasCCG_use_rate: 0.12, nuclear_use_rate: 0.94, storage_phase: 0.61 }
     }
 
     fetchData()

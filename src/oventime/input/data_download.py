@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
 from oventime.config import RETENTION_DAYS, FREQ_UPDATE_ECO2MIX, MIN_FORESIGHT_PRICES, COUNTRY_CODE, ENTSOE_API_KEY
-from oventime.utils import trim_trailing_nans, floor_dt
+from oventime.utils import trim_trailing_nans, floor_dt, fmt_ts
 from oventime.input import data_storage
 
 logger = logging.getLogger(__name__)
@@ -91,40 +91,30 @@ def update_eco2mix_data(
     """
     Update local eco2mix data from API requests up to now, cleans up data older than <retention_days> days ago.
     """
-    logger.info("\n[Eco2Mix Data Update]")
     data_storage.init_raw_db()
 
     # 1. Load existing data
     local = data_storage.read_eco2mix()
     local = trim_trailing_nans(local, cols=COLS_TRIM)
-
-    if not local:
-        last_timestamp = None
-        logger.info("Local data - None")
-    else:
-        last_timestamp = local[-1]["date_heure"]
-        logger.info(f"Local data - Last timestamp: {last_timestamp}")
+    prev_ts = local[-1]["date_heure"] if local else None
 
     # 2. Determine download window
     now = floor_dt(datetime.now(timezone.utc))
     earliest_needed = now - timedelta(days=retention_days)
 
-    if last_timestamp is None:
+    if prev_ts is None:
         start = earliest_needed
     else:
-        # Si les données locales ne remontent pas assez loin, retélécharger l'historique manquant
         oldest_local = local[0]["date_heure"] if local else None
         if oldest_local is None or oldest_local > earliest_needed + timedelta(hours=1):
             start = earliest_needed
-            logger.info(f"Données locales trop récentes ({oldest_local}), retéléchargement depuis {start}")
+            logger.warning(f"[eco2mix] Historique incomplet (oldest={fmt_ts(oldest_local)}), retéléchargement depuis {fmt_ts(start)}")
         else:
-            start = last_timestamp + timedelta(minutes=15)
+            start = prev_ts + timedelta(minutes=15)
 
     if start >= now:
-        logger.info("Data already up to date. Nothing to download.")
-        return last_timestamp
-    else:
-        logger.info(f"Attempting to download data starting from: {start}")
+        logger.info(f"[eco2mix] À jour — last={fmt_ts(prev_ts)}")
+        return prev_ts
 
     # 3. Download missing data
     all_new = []
@@ -132,38 +122,36 @@ def update_eco2mix_data(
         try:
             new_data = eco2mix_rows(start=start, end=now)
         except Exception as e:
-            logger.error(f"Error fetching eco2mix data(start={start}, end={now}) : {e!r}")
+            logger.error(f"[eco2mix] Erreur téléchargement (start={fmt_ts(start)}): {e!r}")
             break
 
         if not new_data:
-            logger.info(f"No data for {start} -> {now}, stop downloading.")
             break
 
-        logger.info(f"Downloaded data from {new_data[0]['date_heure']} to {new_data[-1]['date_heure']}")
         all_new.extend(new_data)
-        last_timestamp = new_data[-1]["date_heure"]
-        start = last_timestamp + timedelta(minutes=15)
+        start = new_data[-1]["date_heure"] + timedelta(minutes=15)
 
     if not all_new:
         if not local:
-            logger.error("No eco2mix data available.")
+            logger.error("[eco2mix] Aucune donnée disponible.")
             return None
-        # Nothing new but local exists
-        return last_timestamp
+        logger.info(f"[eco2mix] Rien de nouveau — last={fmt_ts(prev_ts)}")
+        return prev_ts
 
     # 4. Upsert new data (SQLite handles dedup via PRIMARY KEY)
     data_storage.upsert_eco2mix(all_new)
 
     # 5. Remove data older than retention_days
-    limit = now - timedelta(days=retention_days)
-    data_storage.delete_eco2mix_before(limit)
-    logger.info("Update completed.")
+    data_storage.delete_eco2mix_before(now - timedelta(days=retention_days))
 
-    # 6. Return the last timestamp with complete data
-    all_data = data_storage.read_eco2mix()
-    all_data = trim_trailing_nans(all_data, cols=COLS_TRIM)
+    # 6. Return the last timestamp with complete data + log summary
+    all_data_raw = data_storage.read_eco2mix()
+    all_data = trim_trailing_nans(all_data_raw, cols=COLS_TRIM)
     if not all_data:
         return None
+    n_trimmed = len(all_data_raw) - len(all_data)
+    dl_str = f"{fmt_ts(all_new[0]['date_heure'])}→{fmt_ts(all_new[-1]['date_heure'])} (+{len(all_new)})"
+    logger.info(f"[eco2mix] prev={fmt_ts(prev_ts)} | dl={dl_str} | trim={n_trimmed} | last={fmt_ts(all_data[-1]['date_heure'])}")
     return all_data[-1]["date_heure"]
 
 
@@ -188,16 +176,10 @@ def _parse_entsoe_prices(xml_text: str) -> list[dict]:
 
             period_start = datetime.fromisoformat(start_el.text.replace("Z", "+00:00"))
 
-            # Determine resolution (PT15M or PT60M typically)
-            resolution_minutes = 60  # default
-            if resolution_el is not None and resolution_el.text:
-                res_text = resolution_el.text
-                if "15M" in res_text:
-                    resolution_minutes = 15
-                elif "30M" in res_text:
-                    resolution_minutes = 30
-                elif "60M" in res_text or "1H" in res_text:
-                    resolution_minutes = 60
+            # Resolution must be PT15M
+            if resolution_el is None or resolution_el.text is None or "15M" not in resolution_el.text:
+                raise ValueError(f"Résolution ENTSO-E inattendue : {resolution_el.text if resolution_el is not None else 'None'}")
+            resolution_minutes = 15
 
             for point in period.iter(f"{ns}Point"):
                 pos_el = point.find(f"{ns}position")
@@ -243,26 +225,16 @@ def update_price_data(
     """
     Update local price data from the ENTSO-E API up to now, cleans up data older than <retention_days> days ago.
     """
-    logger.info("\n[Day-Ahead Price Data Update]")
     data_storage.init_raw_db()
 
     # 1. Load local data
     local = data_storage.read_prices()
-    if local:
-        last_timestamp = local[-1]["date_heure"]
-        logger.info(f"Local data - Last timestamp: {last_timestamp}")
-    else:
-        last_timestamp = None
-        logger.info("No existing price data found.")
+    prev_ts = local[-1]["date_heure"] if local else None
 
     # 2. Determine download window
     now = floor_dt(datetime.now(timezone.utc))
-    if last_timestamp is None:
-        start = now - timedelta(days=retention_days)
-    else:
-        start = last_timestamp + timedelta(minutes=15)
+    start = (prev_ts + timedelta(minutes=15)) if prev_ts else (now - timedelta(days=retention_days))
     end = now + timedelta(days=2)  # overshoot to include the next day entirely
-    logger.info(f"Attempting to download from {start} to {end}")
 
     # 3. Download from ENTSO-E REST API
     eic = COUNTRY_EIC.get(COUNTRY_CODE, COUNTRY_CODE)
@@ -279,36 +251,34 @@ def update_price_data(
         resp = httpx.get(ENTSOE_API_URL, params=params, timeout=30)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        # 400 with "No matching data" means data is already up to date
         if e.response.status_code == 400 and "No matching data" in e.response.text:
-            logger.info("Data already up to date. Nothing to download.")
-            return last_timestamp
-        logger.error(f"Error when fetching price data: {e!r}")
-        return last_timestamp
+            logger.info(f"[prices] À jour — last={fmt_ts(prev_ts)}")
+            return prev_ts
+        logger.error(f"[prices] Erreur HTTP: {e!r}")
+        return prev_ts
     except Exception as e:
-        logger.error(f"Error when fetching price data: {e!r}")
-        return last_timestamp
+        logger.error(f"[prices] Erreur: {e!r}")
+        return prev_ts
 
     new_data = _parse_entsoe_prices(resp.text)
     if not new_data:
-        logger.info("No new price data parsed from response.")
-        return last_timestamp
-
-    logger.info(f"Downloaded data from {new_data[0]['date_heure']} to {new_data[-1]['date_heure']}")
+        logger.info(f"[prices] Réponse vide — last={fmt_ts(prev_ts)}")
+        return prev_ts
 
     # 4. Upsert (SQLite handles dedup)
     data_storage.upsert_prices(new_data)
 
     # 5. Remove old data
-    limit = now - timedelta(days=retention_days)
-    data_storage.delete_prices_before(limit)
-    logger.info("Update completed.")
+    data_storage.delete_prices_before(now - timedelta(days=retention_days))
 
-    # 6. Return the last timestamp with complete data
-    all_data = data_storage.read_prices()
-    all_data = trim_trailing_nans(all_data, cols=["price"])
+    # 6. Return the last timestamp with complete data + log summary
+    all_data_raw = data_storage.read_prices()
+    all_data = trim_trailing_nans(all_data_raw, cols=["price"])
     if not all_data:
         return None
+    n_trimmed = len(all_data_raw) - len(all_data)
+    dl_str = f"{fmt_ts(new_data[0]['date_heure'])}→{fmt_ts(new_data[-1]['date_heure'])} (+{len(new_data)})"
+    logger.info(f"[prices] prev={fmt_ts(prev_ts)} | dl={dl_str} | trim={n_trimmed} | last={fmt_ts(all_data[-1]['date_heure'])}")
     return all_data[-1]["date_heure"]
 
 

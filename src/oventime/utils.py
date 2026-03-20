@@ -138,6 +138,13 @@ def to_utc_timestamp(
     )
 
 
+def fmt_ts(dt: "datetime | None") -> str:
+    """Compact local-time datetime string for logs: DD/MM HH:MM"""
+    if dt is None:
+        return "—"
+    return dt.astimezone(ZoneInfo(TIMEZONE)).strftime("%d/%m %H:%M")
+
+
 def trim_trailing_nans(rows: list[dict], cols: list = None) -> list[dict]:
     """
     Removes rows with missing values at the end of a list of dicts.

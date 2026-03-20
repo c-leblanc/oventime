@@ -5,7 +5,7 @@ import oventime.core.diagnostic
 import oventime.core.dayahead
 import oventime.cache.cache
 
-from oventime.utils import to_epoch
+from oventime.utils import to_epoch, fmt_ts
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def update_timeline(latest_ts):
     last_tl_ts = oventime.cache.cache.get_last_ts_timeline()
 
     if last_tl_ts is not None and last_tl_ts >= latest_ts:
-        logger.info("Timeline déjà à jour.")
+        logger.info(f"[timeline] À jour — last={fmt_ts(latest_ts)}")
         return
 
     tl = oventime.core.dayahead.timeline_output(now=latest_ts)
@@ -47,7 +47,7 @@ def update_timeline(latest_ts):
         threshold_or=tl["threshold_or"]
     )
 
-    logger.info("Timeline mise à jour.")
+    logger.info(f"[timeline] Mise à jour — last={fmt_ts(latest_ts)}")
 
 
 def update_cache_curr(source_version="v1"):
@@ -65,15 +65,13 @@ def update_cache_curr(source_version="v1"):
     ]
 
     existing_ts = oventime.cache.cache.get_ts_in_range(cutoff, now)
-
     missing_times = [ts for ts in target_times if ts not in existing_ts]
 
     if not missing_times:
-        logger.info("Cache déjà complet sur les 48 dernières heures.")
+        logger.info(f"[cache] À jour — last={fmt_ts(now)}")
     else:
-        logger.info(f"{len(missing_times)} point(s) à calculer.")
-
         for ts in missing_times:
             compute_and_store(ts, source_version)
+        logger.info(f"[cache] +{len(missing_times)} pts calculés — last={fmt_ts(now)}")
 
     update_timeline(now)

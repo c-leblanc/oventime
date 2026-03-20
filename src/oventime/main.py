@@ -9,11 +9,15 @@ from oventime.api.routes import app
 from oventime.config import FORCE_RAW_REFRESH
 from oventime.input.data_storage import RAW_DB_PATH
 
+_fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s", datefmt="%d/%m %H:%M:%S")
+
 stdout_handler = logging.StreamHandler(sys.stdout)
 stdout_handler.setLevel(logging.INFO)
+stdout_handler.setFormatter(_fmt)
 
 stderr_handler = logging.StreamHandler(sys.stderr)
 stderr_handler.setLevel(logging.ERROR)
+stderr_handler.setFormatter(_fmt)
 
 logging.basicConfig(level=logging.INFO, handlers=[stdout_handler, stderr_handler])
 
